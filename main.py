@@ -99,6 +99,42 @@ class projectile(object):
         pygame.draw.circle(win, self.color, (self.x, self.y), self.radius )
 
 
+class enemy(object):
+    enemyRight = []
+    
+    def __init__(self, x, y, width, height, end):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.velocity = 10
+        # self.left = False
+        # self.right = False
+        # self.idle = True
+        self.end = end
+        self.walkCount = 0
+        self.path = [self.x, self.end]
+
+    def draw(self, win):
+        self.move()
+        if self.walkCount + 1 <= 3 * 11:
+            self.walkCount = 0
+
+
+        
+    def move(self):
+        if self.vel > 0:
+            if self.x + self.vel < self.path[1]:
+                self.x += self.vel 
+            else:
+                self.vel *= -1
+                self.walkCount = 0
+        else:
+            if self.x - self.vel > self.path[1]:
+                self.x += self.vel
+            else:
+                self.walkCount *= -1
+
 playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
 running = True
 count = [0]
@@ -196,9 +232,7 @@ while running:
     bullets = newBullets.copy()      
     keys = pygame.key.get_pressed()
 
-    
-
-    if keys[pygame.K_LEFT] and playerMain.x >= playerMain.velocity:
+    if keys[pygame.K_LEFT] and playerMain.x >= playerMain.velocity - 90:
         playerMain.x -= playerMain.velocity
         playerMain.left, playerMain.right, playerMain.idle = True, False, False
         playerMain.walkCount += 1
@@ -228,4 +262,5 @@ while running:
     redrawGameWindow()
 
 pygame.quit()
+
 
