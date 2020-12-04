@@ -32,6 +32,9 @@ ground3 = pygame.transform.scale(ground3, (64, 64))
 ground4 = pygame.transform.scale(ground4, (64, 64))
 ground5 = pygame.transform.scale(ground5, (64, 64))
 ground6 = pygame.transform.scale(ground6, (64, 64))
+water1, water2 = pygame.image.load(".//Images//wintertileset//png//Tiles//17.png"), pygame.image.load(".//Images//wintertileset//png//Tiles//18.png")
+water1 = pygame.transform.scale(water1, (64, 64))
+water2 = pygame.transform.scale(water2, (64, 64))
 charR = pygame.transform.scale(pygame.image.load(".//santasprites//png//Idle/Idle (1).png"), (186, 128))
 charL = pygame.transform.flip(charR, True, False)
 clock = pygame.time.Clock()
@@ -82,21 +85,44 @@ class projectile(object):
 playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
 running = True
 count = [0]
-
+groundLevel = []
 def drawGround():
-    prevLevel = 3
+    if groundLevel == []:
+        prevLevel = 3
+        groundLevel.append(prevLevel)
+        nextLevel = prevLevel
+        while len(groundLevel) < scrWidth // 64:
+            nextLevel = random.randint(max(0, prevLevel-3),  prevLevel + 2)
+            groundLevel.append(nextLevel)
+            if nextLevel != prevLevel:
+                groundLevel.append(nextLevel)
+            prevLevel = nextLevel
+        print(groundLevel)
 
-    for i in range(64, scrHeight, 64):
-        nextLevel == random
-    for i in range(64, scrWidth-64, 64):
-        win.blit(ground2, (i, scrHeight-128))
-    win.blit(ground1, (0, scrHeight-128))
-    win.blit(ground3, (i+64, scrHeight-128))
+    index = 0
+    for i in range(0, scrWidth, 64):
+        if groundLevel[index] == 0:
+            win.blit(water1, (i, scrHeight-64))
+        elif index != len(groundLevel) -1 and groundLevel[index] > groundLevel[index+1]:
+            win.blit(ground3, (i, scrHeight-(64*groundLevel[index])))
+        elif index != 0 and groundLevel[index] > groundLevel[index-1]:
+            win.blit(ground1, (i, scrHeight-(64*groundLevel[index])))
+        else:
+            win.blit(ground2, (i, scrHeight-(64*groundLevel[index])))
+        for j in range(0, 64*groundLevel[index], 64):
+            win.blit(ground5, (i, scrHeight-j))
+        index += 1
 
-    for i in range(64, scrWidth-64, 64):
-        win.blit(ground5, (i, scrHeight-64))
-    win.blit(ground4, (0, scrHeight-64))
-    win.blit(ground6, (i+64, scrHeight-64))
+
+    # for i in range(64, scrWidth-64, 64):
+    #     win.blit(ground2, (i, scrHeight-128))
+    # win.blit(ground1, (0, scrHeight-128))
+    # win.blit(ground3, (i+64, scrHeight-128))
+
+    # for i in range(64, scrWidth-64, 64):
+    #     win.blit(ground5, (i, scrHeight-64))
+    # win.blit(ground4, (0, scrHeight-64))
+    # win.blit(ground6, (i+64, scrHeight-64))
 
 def redrawGameWindow():
     # win.fill((198, 198, 198))
