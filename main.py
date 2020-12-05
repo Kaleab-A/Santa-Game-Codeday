@@ -76,7 +76,7 @@ class Player (object):
         self.x = int(self.x)
         self.y = int(self.y)
         if not self.isJump:
-        self.y = int(scrHeight - groundLevel[santaPos] * 64 - 64 - 50)
+            self.y = int(scrHeight - groundLevel[santaPos] * 64 - 64 - 50)
 
         if self.walkCount + 1 > 13*3: self.walkCount = 0
         if self.idle:
@@ -237,18 +237,10 @@ while running:
             if len(bullets) < 10:
                 bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 6, color["red"], mousePosition))
 
-
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                if playerMain.left: facing = -1
-                else: facing = 1
-                if len(bullets) < 10:
-                    bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 6, color["red"], facing))
-
     newBullets = []
     for index in range(len(bullets)):
         bullet = bullets[index]
-        if bullet.x  < scrWidth and bullet.x > 0:
+        if bullet.x  < scrWidth and bullet.x > 0 and bullet.y < scrHeight and bullet.y > 0:
             bullet.x += int(bullet.changeInX * bullet.speed)
             bullet.y -= int(bullet.changeInY * bullet.speed)
             newBullets.append(bullet)  
@@ -257,16 +249,16 @@ while running:
     keys = pygame.key.get_pressed()
 
     if keys[pygame.K_LEFT] and playerMain.x >= playerMain.velocity - 90:
-            # playerMain.x -= playerMain.velocity
-            playerMain.left, playerMain.right, playerMain.idle = True, False, False
-            playerMain.walkCount += 1
-            santaPos -= 1
-            
+        # playerMain.x -= playerMain.velocity
+        playerMain.left, playerMain.right, playerMain.idle = True, False, False
+        playerMain.walkCount += 1
+        santaPos -= 1
+        
     elif keys[pygame.K_RIGHT] and playerMain.x <= scrWidth - playerMain.width - playerMain.velocity:
-            # playerMain.x += playerMain.velocity
-            playerMain.left, playerMain.right, playerMain.idle = False, True, False
-            playerMain.walkCount += 1
-            santaPos += 1
+        # playerMain.x += playerMain.velocity
+        playerMain.left, playerMain.right, playerMain.idle = False, True, False
+        playerMain.walkCount += 1
+        santaPos += 1
     else:
         playerMain.walkCount = 0
         playerMain.idle = True
