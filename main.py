@@ -1,12 +1,11 @@
 import pygame
 import random
+import math
 
 # Initalizing Pygame
 pygame.init()
 scrWidth = 1024
 scrHeight = 512
-distance = 0
-moveSpeed = 10
 
 # Create the Screen
 win = pygame.display.set_mode((scrWidth, scrHeight))
@@ -57,16 +56,10 @@ clock = pygame.time.Clock()
 color = {"black": (0, 0, 0), "white": (255, 255, 255), "red": (255, 0, 0), "blue": (0, 0, 255), "green": (0, 255, 0)}
 
 
-def offsetBlit(surface, coordinates):
-    x, y = coordinates
-    win.blit(surface, (x + distance, y))
-
-
 class Player (object):
     def __init__(self, x, y, width, height):
         self.x = x
         self.y = y
-        self.constantX = scrWidth // 2
         self.width = width
         self.height = height
         self.velocity = 10
@@ -83,35 +76,35 @@ class Player (object):
         self.x = int(self.x)
         self.y = int(self.y)
         if not self.isJump:
-            self.y = int(scrHeight - groundLevel[santaPos] * 64 - 64 - 50)
+        self.y = int(scrHeight - groundLevel[santaPos] * 64 - 64 - 50)
+
         if self.walkCount + 1 > 13*3: self.walkCount = 0
         if self.idle:
-            if self.left: 
-                win.blit(charL, (self.constantX, self.y))
-            else: 
-                win.blit(charR, (self.constantX, self.y))
+            if self.left: win.blit(charL, (self.x, self.y))
+            else: win.blit(charR, (self.x, self.y))
         elif self.isJump:
-            if self.left: 
-                win.blit(charL, (self.constantX, self.y))
-            else: 
-                win.blit(charR, (self.constantX, self.y))
-        elif self.left: 
-            win.blit(walkLeft[self.walkCount // 3], (self.constantX, self.y))
-        elif self.right: 
-            win.blit(walkRight[self.walkCount // 3], (self.constantX, self.y))
+            if self.left: win.blit(charL, (self.x, self.y))
+            else: win.blit(charR, (self.x, self.y))
+        elif self.left: win.blit(walkLeft[self.walkCount // 3], (self.x, self.y))
+        elif self.right: win.blit(walkRight[self.walkCount // 3], (self.x, self.y))
         else: assert 1
 
 class projectile(object):
-    def __init__(self, x, y, radius, color, facing):
+    def __init__(self, x, y, radius, color, mousePosition):
         self.x = round(x)
         self.y = round(y)
+        self.changeInX = mousePosition[0] -  x
+        self.changeInY = -mousePosition[1] + y
         self.radius = radius
         self.color = color
-        self.facing = facing
-        self.velocity = 8 * facing
-
+        magnitude = math.sqrt(self.changeInX ** 2 + self.changeInY ** 2)
+        if magnitude > 0:
+            self.changeInX /= magnitude
+            self.changeInY /= magnitude
+        self.speed = 8
+        
     def draw(self, win):
-        pygame.draw.circle(win, self.color, (self.x, self.y), self.radius )
+        pygame.draw.circle(win, self.color, (self.x, self.y), self.radius)
 
 
 class enemy(object):
@@ -200,9 +193,9 @@ def drawGround():
             prevLevel = nextLevel
 
     drawableGroundLevel = groundLevel[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
+
     drawableObjectList = additionalObjectsList[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
     index = 0
-
     for i in range(scrWidth//64):
         i *= 64
         if drawableGroundLevel[index] == 0:
@@ -215,9 +208,10 @@ def drawGround():
             win.blit(ground2, (i, scrHeight-(64*drawableGroundLevel[index])))
         for j in range(0, 64*drawableGroundLevel[index], 64):
             win.blit(ground5, (i, scrHeight-j))
-        
+    
         if drawableObjectList[index] and drawableGroundLevel[index]:
             win.blit(drawableObjectList[index], (i, scrHeight-(64*drawableGroundLevel[index] + 64)))
+
 
         index += 1
 
@@ -238,6 +232,12 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.MOUSEBUTTONUP:
+            mousePosition = pygame.mouse.get_pos()
+            if len(bullets) < 10:
+                bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 6, color["red"], mousePosition))
+
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 if playerMain.left: facing = -1
@@ -249,7 +249,8 @@ while running:
     for index in range(len(bullets)):
         bullet = bullets[index]
         if bullet.x  < scrWidth and bullet.x > 0:
-            bullet.x += bullet.velocity
+            bullet.x += int(bullet.changeInX * bullet.speed)
+            bullet.y -= int(bullet.changeInY * bullet.speed)
             newBullets.append(bullet)  
 
     bullets = newBullets.copy()      
@@ -266,7 +267,6 @@ while running:
             playerMain.left, playerMain.right, playerMain.idle = False, True, False
             playerMain.walkCount += 1
             santaPos += 1
-
     else:
         playerMain.walkCount = 0
         playerMain.idle = True
@@ -285,7 +285,7 @@ while running:
         else:
             playerMain.isJump = False
             playerMain.jumpCount = playerMain.initJumpCount
-
+        
     redrawGameWindow()
 
 pygame.quit()
