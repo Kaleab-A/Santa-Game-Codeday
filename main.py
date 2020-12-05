@@ -1,5 +1,7 @@
 import pygame
 import random
+import math
+import time
 
 # Initalizing Pygame
 pygame.init()
@@ -76,6 +78,7 @@ class Player (object):
         self.y = int(self.y)
         if not self.isJump:
             self.y = int(scrHeight - groundLevel[santaPos] * 64 - 64 - 50)
+
         if self.walkCount + 1 > 13*3: self.walkCount = 0
         if self.idle:
             if self.left: win.blit(charL, (self.x, self.y))
@@ -88,20 +91,24 @@ class Player (object):
         else: assert 1
 
 class projectile(object):
-    def __init__(self, x, y, radius, color, facing):
+    def __init__(self, x, y, radius, color, mousePosition):
         self.x = round(x)
         self.y = round(y)
+        self.changeInX = mousePosition[0] -  x
+        self.changeInY = -mousePosition[1] + y
         self.radius = radius
         self.color = color
-        self.facing = facing
-        self.velocity = 8 * facing
-
+        magnitude = math.sqrt(self.changeInX ** 2 + self.changeInY ** 2)
+        if magnitude > 0:
+            self.changeInX /= magnitude
+            self.changeInY /= magnitude
+        self.speed = 8
+        
     def draw(self, win):
-        pygame.draw.circle(win, self.color, (self.x, self.y), self.radius )
+        pygame.draw.circle(win, self.color, (self.x, self.y), self.radius)
 
 
-class enemy(object):
-    # Loading Image
+class enemy(Player):
     enemyLeft = []
     enemyRight = []
     for i in range(1, 5):
@@ -119,31 +126,64 @@ class enemy(object):
         self.width = width
         self.height = height
         self.velocity = 6
-        # self.idle = True
         self.end = 0
         self.walkCount = 0
+        self.santaMovment = 0
+        self.count = 0
+        self.health = 100
 
     def draw(self, win):
-        self.move()
-        self.y = scrHeight - groundLevel[self.x // 64 + 1] * 64 - 50
-        if self.walkCount + 1 >= 4*3:
-            self.walkCount = 0
-        if self.end >= self.x:
-            win.blit(self.enemyRight[self.walkCount // 3], (self.x, self.y))
-        else: 
-            win.blit(self.enemyLeft[self.walkCount // 3], (self.x, self.y))
+        if self.health > 0:
+            self.move()
+            # self.y = 300
+            # print(santaPos, (self.x // 64), groundLevel[santaPos -  (self.x // 64) ])
+            self.y = scrHeight - groundLevel[self.x // 64 + 1] * 64 - 50
+            if self.walkCount + 1 >= 4*3:
+                self.walkCount = 0
+            if self.end >= self.x:
+                win.blit(self.enemyRight[self.walkCount // 3], (self.x, self.y))
+            else: 
+                win.blit(self.enemyLeft[self.walkCount // 3], (self.x, self.y))
+
+            pygame.draw.rect(win, color["red"], (self.x, self.y, self.width, self.height), 1)
         
     def move(self):
-        if self.end >= self.x:
-            self.velocity = abs(self.velocity)
-            self.walkCount +=1
-        else:
-            self.velocity = -abs(self.velocity)
-            self.walkCount +=1
-        self.x += self.velocity
+        # self.x += 1
+        # if self.end >= self.x:
+        #     self.velocity = abs(self.velocity)
+        #     self.walkCount += 1
+        # else:
+        #     self.velocity = -abs(self.velocity)
+        #     self.walkCount +=1
+        # ghostMove = random.randint(0, 1)
+        # if ghostMove:
+        #     self.velocity = abs(self.velocity)
+        # else:
+        #     self.velocity = -abs(self.velocity)
+        # if scrWidth > self.x:
+        #     self.velocity = self.velocity
+        #     self.walkCount += 1
+        #     if scrWidth < 0:
+        #         self.velocity = abs(self.velocity)
+        # else:
+        #     self.velocity = -abs(self.velocity)
+        self.walkCount += 1
+        # self.x = 400
+        # self.x += self.velocity
+        # self.santaMovment -= 1
+
+    def hit(self):
+        self.count += 1
+        self.health -= 50
+        print("HIT", self.count)
             
 playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
-ghost1 = enemy(100, 410, 100, 100)
+ghosts = []
+ghostCount = 10
+for i in range(ghostCount):
+    randX, randY = [random.randint(0, scrWidth), random.randint(0, scrHeight)]
+    print(randX, randY)
+    ghosts.append(enemy(randX, randY, 37, 45))
 running = True
 count = [0]
 groundLevel = []
@@ -184,8 +224,10 @@ def drawGround():
 
             groundLevel.append(nextLevel)
             prevLevel = nextLevel
+        print( groundLevel)
 
     drawableGroundLevel = groundLevel[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
+
     drawableObjectList = additionalObjectsList[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
     index = 0
     for i in range(scrWidth//64):
@@ -200,57 +242,74 @@ def drawGround():
             win.blit(ground2, (i, scrHeight-(64*drawableGroundLevel[index])))
         for j in range(0, 64*drawableGroundLevel[index], 64):
             win.blit(ground5, (i, scrHeight-j))
-        
+    
         if drawableObjectList[index] and drawableGroundLevel[index]:
             win.blit(drawableObjectList[index], (i, scrHeight-(64*drawableGroundLevel[index] + 64)))
-
         index += 1
 
+def bulletCollid(bulletX, bulletY, ghosts):
+    for ghost in ghosts:
+        if bulletX > ghost.x and bulletX < ghost.x + ghost.width:
+            if bulletY > ghost.y and bulletY < ghost.y + ghost.height:
+                return ghost
+    return False
+ 
 def redrawGameWindow():
     win.blit(bg, (0, 0))
     drawGround()
     playerMain.draw(win)
-    ghost1.end = playerMain.x
-    ghost1.draw(win)
+    # ghost1.end = playerMain.x
+    for ghost in ghosts:
+        ghost.draw(win)
     for bullet in bullets:
-        bullet.draw(win)
+        hitGhost = bulletCollid(bullet.x, bullet.y, ghosts)
+        if hitGhost:
+            bullets.pop(bullets.index(bullet))
+            hitGhost.hit()
+        else:
+            bullet.draw(win)
     count[0] += 1
     pygame.display.update()
 
 bullets = []
 while running:
-    clock.tick(27)
+    clock.tick(40)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                if playerMain.left: facing = -1
-                else: facing = 1
-                if len(bullets) < 10:
-                    bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 6, color["red"], facing))
+        if event.type == pygame.MOUSEBUTTONUP:
+            mousePosition = pygame.mouse.get_pos()
+            if len(bullets) < 10:
+                bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 6, color["red"], mousePosition))
 
     newBullets = []
     for index in range(len(bullets)):
         bullet = bullets[index]
-        if bullet.x  < scrWidth and bullet.x > 0:
-            bullet.x += bullet.velocity
+        if bullet.x  < scrWidth and bullet.x > 0 and bullet.y < scrHeight and bullet.y > 0:
+            bullet.x += int(bullet.changeInX * bullet.speed)
+            bullet.y -= int(bullet.changeInY * bullet.speed)
             newBullets.append(bullet)  
 
     bullets = newBullets.copy()      
     keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT] and santaPos > scrWidth // 128:
+        # playerMain.x >= playerMain.velocity - 90
+        # playerMain.x -= playerMain.velocity
+        playerMain.left, playerMain.right, playerMain.idle = True, False, False
+        playerMain.walkCount += 1
+        santaPos -= 1
+        # ghost1.x += 64
+        # for ghost in ghosts:
+        #     ghost.x += 64
+        
+    elif keys[pygame.K_RIGHT] and santaPos < len(groundLevel) - (scrWidth // 128):
+        # playerMain.x <= scrWidth - playerMain.width - playerMain.velocity
+        # playerMain.x += playerMain.velocity
+        playerMain.left, playerMain.right, playerMain.idle = False, True, False
+        playerMain.walkCount += 1
+        santaPos += 1
+        # ghost1.x -= 6
 
-    if keys[pygame.K_LEFT] and playerMain.x >= playerMain.velocity - 90:
-            # playerMain.x -= playerMain.velocity
-            playerMain.left, playerMain.right, playerMain.idle = True, False, False
-            playerMain.walkCount += 1
-            santaPos -= 1
-            
-    elif keys[pygame.K_RIGHT] and playerMain.x <= scrWidth - playerMain.width - playerMain.velocity:
-            # playerMain.x += playerMain.velocity
-            playerMain.left, playerMain.right, playerMain.idle = False, True, False
-            playerMain.walkCount += 1
-            santaPos += 1
     else:
         playerMain.walkCount = 0
         playerMain.idle = True
@@ -269,9 +328,7 @@ while running:
         else:
             playerMain.isJump = False
             playerMain.jumpCount = playerMain.initJumpCount
-
+        
     redrawGameWindow()
 
 pygame.quit()
-
-
