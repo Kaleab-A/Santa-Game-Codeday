@@ -80,9 +80,10 @@ class Player (object):
         self.walkCount = 0
 
     def draw(self, win):
+        self.x = int(self.x)
+        self.y = int(self.y)
         if not self.isJump:
-            self.y = scrHeight - groundLevel[self.x // 64 + 1] * 64 - 64 - 50
-        print(groundLevel[self.constantX // 64 + 1] )
+          self.y = int(scrHeight - groundLevel[self.x // 64 + 1] * 64 - 64 - 50)
         if self.walkCount + 1 > 13*3: self.walkCount = 0
         if self.idle:
             if self.left: 
@@ -114,42 +115,49 @@ class projectile(object):
 
 
 class enemy(object):
+    # Loading Image
+    enemyLeft = []
     enemyRight = []
+    for i in range(1, 5):
+        path = ".//Images//Enemy//Ghost//Png_animation//"
+        name = "Ghost" + str(i) + ".png"
+        picture = pygame.image.load(path + name)
+        # picture = pygame.transform.scale(picture, (186, 128))
+        pictureFlip = pygame.transform.flip(picture, True, False)
+        enemyLeft.append(picture)
+        enemyRight.append(pictureFlip)
     
-    def __init__(self, x, y, width, height, end):
+    def __init__(self, x, y, width, height):
         self.x = x
         self.y = y
         self.width = width
         self.height = height
-        self.velocity = 10
-        # self.left = False
-        # self.right = False
+        self.velocity = 6
         # self.idle = True
-        self.end = end
+        self.end = 0
         self.walkCount = 0
-        self.path = [self.x, self.end]
 
     def draw(self, win):
         self.move()
-        if self.walkCount + 1 <= 3 * 11:
+        self.y = scrHeight - groundLevel[self.x // 64 + 1] * 64 - 50
+        if self.walkCount + 1 >= 4*3:
             self.walkCount = 0
-
-
+        if self.end >= self.x:
+            win.blit(self.enemyRight[self.walkCount // 3], (self.x, self.y))
+        else: 
+            win.blit(self.enemyLeft[self.walkCount // 3], (self.x, self.y))
         
     def move(self):
-        if self.vel > 0:
-            if self.x + self.vel < self.path[1]:
-                self.x += self.vel 
-            else:
-                self.vel *= -1
-                self.walkCount = 0
+        if self.end >= self.x:
+            self.velocity = abs(self.velocity)
+            self.walkCount +=1
         else:
-            if self.x - self.vel > self.path[1]:
-                self.x += self.vel
-            else:
-                self.walkCount *= -1
-
+            self.velocity = -abs(self.velocity)
+            self.walkCount +=1
+        self.x += self.velocity
+            
 playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
+ghost1 = enemy(100, 410, 100, 100)
 running = True
 count = [0]
 groundLevel = []
@@ -218,6 +226,8 @@ def redrawGameWindow():
     win.blit(bg, (0, 0))
     drawGround()
     playerMain.draw(win)
+    ghost1.end = playerMain.x
+    ghost1.draw(win)
     for bullet in bullets:
         bullet.draw(win)
     count[0] += 1
@@ -251,6 +261,7 @@ while running:
         distance += moveSpeed
         playerMain.left, playerMain.right, playerMain.idle = True, False, False
         playerMain.walkCount += 1
+        
     elif keys[pygame.K_RIGHT] and playerMain.x <= scrWidth - playerMain.width - playerMain.velocity:
         playerMain.x += playerMain.velocity
         distance -= moveSpeed
