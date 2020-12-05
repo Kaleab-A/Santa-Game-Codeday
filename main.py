@@ -76,7 +76,8 @@ class Player (object):
         self.x = int(self.x)
         self.y = int(self.y)
         if not self.isJump:
-            self.y = int(scrHeight - groundLevel[self.x // 64 + 1] * 64 - 64 - 50)
+        self.y = int(scrHeight - groundLevel[santaPos] * 64 - 64 - 50)
+
         if self.walkCount + 1 > 13*3: self.walkCount = 0
         if self.idle:
             if self.left: win.blit(charL, (self.x, self.y))
@@ -181,23 +182,19 @@ def drawGround():
                 nextLevel = prevLevel
             groundLevel.append(nextLevel)
 
-            isObjectAdded = random.choices([0, 1], [0.7, 0.3])[0]
-            if isObjectAdded:
-                additionalObjectsList.append(random.choice(additionalObjects))
-            else:
-                additionalObjectsList.append(0)
+            for i in range(2):
+                changeObjectAppear = random.randint(0, 4)
+                if changeObjectAppear == 0:
+                    changeObject = random.randint(0, 9)
+                    additionalObjectsList.append(additionalObjects[changeObject])
+                else: additionalObjectsList.append(0)
 
-            if nextLevel != prevLevel:
-                isObjectAdded = random.choices([0, 1], [0.7, 0.3])[0]
-                if isObjectAdded:
-                    additionalObjectsList.append(random.choice(additionalObjects))
-                else:
-                    additionalObjectsList.append(0)
-                groundLevel.append(nextLevel)
+            groundLevel.append(nextLevel)
             prevLevel = nextLevel
-        print(groundLevel)
 
     drawableGroundLevel = groundLevel[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
+
+    drawableObjectList = additionalObjectsList[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
     index = 0
     for i in range(scrWidth//64):
         i *= 64
@@ -211,14 +208,14 @@ def drawGround():
             win.blit(ground2, (i, scrHeight-(64*drawableGroundLevel[index])))
         for j in range(0, 64*drawableGroundLevel[index], 64):
             win.blit(ground5, (i, scrHeight-j))
-        
-        if additionalObjectsList[index] and drawableGroundLevel[index]:
-            win.blit(additionalObjectsList[index], (i, scrHeight-(64*drawableGroundLevel[index] + 64)))
+    
+        if drawableObjectList[index] and drawableGroundLevel[index]:
+            win.blit(drawableObjectList[index], (i, scrHeight-(64*drawableGroundLevel[index] + 64)))
+
 
         index += 1
 
 def redrawGameWindow():
-    # win.fill((198, 198, 198))
     win.blit(bg, (0, 0))
     drawGround()
     playerMain.draw(win)
@@ -260,34 +257,16 @@ while running:
     keys = pygame.key.get_pressed()
 
     if keys[pygame.K_LEFT] and playerMain.x >= playerMain.velocity - 90:
-        # if playerMain.x >= scrWidth // 2:
-        playerMain.x -= playerMain.velocity
-        playerMain.left, playerMain.right, playerMain.idle = True, False, False
-        playerMain.walkCount += 1
-        santaPos -= 1
-        # else:
-            # pass
+            # playerMain.x -= playerMain.velocity
+            playerMain.left, playerMain.right, playerMain.idle = True, False, False
+            playerMain.walkCount += 1
+            santaPos -= 1
+            
     elif keys[pygame.K_RIGHT] and playerMain.x <= scrWidth - playerMain.width - playerMain.velocity:
-        # if playerMain.x <= scrWidth // 2:
-        playerMain.x += playerMain.velocity
-        playerMain.left, playerMain.right, playerMain.idle = False, True, False
-        playerMain.walkCount += 1
-        santaPos += 1
-        # else:
-        #     pass
-            # chance = random.randint(1, 10)
-            # nextLevel = -1
-            # if chance <= 3:
-            #     if len(range(max(0, groundLevel[-1]-3),  groundLevel[-1])) != 0:
-            #         nextLevel = random.randint(max(0, groundLevel[-1]-3),  groundLevel[-1]-1)
-            #     if len(range(groundLevel[-1]+1,  groundLevel[-1] + 2)) != 0:
-            #         nextLevel = random.randint(nextLevel, random.randint(groundLevel[-1]+1, groundLevel[-1] + 2))
-            # elif chance == 4:
-            #     nextLevel = 0
-            # else:
-            #     nextLevel = groundLevel[-1]
-            # groundLevel.append(nextLevel)
-            # del groundLevel[0]
+            # playerMain.x += playerMain.velocity
+            playerMain.left, playerMain.right, playerMain.idle = False, True, False
+            playerMain.walkCount += 1
+            santaPos += 1
     else:
         playerMain.walkCount = 0
         playerMain.idle = True
