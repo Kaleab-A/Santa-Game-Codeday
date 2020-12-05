@@ -5,6 +5,8 @@ import random
 pygame.init()
 scrWidth = 1024
 scrHeight = 512
+distance = 0
+moveSpeed = 10
 
 # Create the Screen
 win = pygame.display.set_mode((scrWidth, scrHeight))
@@ -55,10 +57,16 @@ clock = pygame.time.Clock()
 color = {"black": (0, 0, 0), "white": (255, 255, 255), "red": (255, 0, 0), "blue": (0, 0, 255), "green": (0, 255, 0)}
 
 
+def offsetBlit(surface, coordinates):
+    x, y = coordinates
+    win.blit(surface, (x + distance, y))
+
+
 class Player (object):
     def __init__(self, x, y, width, height):
         self.x = x
         self.y = y
+        self.constantX = scrWidth // 2
         self.width = width
         self.height = height
         self.velocity = 10
@@ -74,16 +82,22 @@ class Player (object):
     def draw(self, win):
         if not self.isJump:
             self.y = scrHeight - groundLevel[self.x // 64 + 1] * 64 - 64 - 50
-        print(groundLevel[self.x // 64 + 1] )
+        print(groundLevel[self.constantX // 64 + 1] )
         if self.walkCount + 1 > 13*3: self.walkCount = 0
         if self.idle:
-            if self.left: win.blit(charL, (self.x, self.y))
-            else: win.blit(charR, (self.x, self.y))
+            if self.left: 
+                win.blit(charL, (self.constantX, self.y))
+            else: 
+                win.blit(charR, (self.constantX, self.y))
         elif self.isJump:
-            if self.left: win.blit(charL, (self.x, self.y))
-            else: win.blit(charR, (self.x, self.y))
-        elif self.left: win.blit(walkLeft[self.walkCount // 3], (self.x, self.y))
-        elif self.right: win.blit(walkRight[self.walkCount // 3], (self.x, self.y))
+            if self.left: 
+                win.blit(charL, (self.constantX, self.y))
+            else: 
+                win.blit(charR, (self.constantX, self.y))
+        elif self.left: 
+            win.blit(walkLeft[self.walkCount // 3], (self.constantX, self.y))
+        elif self.right: 
+            win.blit(walkRight[self.walkCount // 3], (self.constantX, self.y))
         else: assert 1
 
 class projectile(object):
@@ -184,18 +198,18 @@ def drawGround():
     index = 0
     for i in range(0, scrWidth, 64):
         if groundLevel[index] == 0:
-            win.blit(water1, (i, scrHeight-64))
+            offsetBlit(water1, (i, scrHeight-64))
         elif index != len(groundLevel) -1 and groundLevel[index] > groundLevel[index+1]:
-            win.blit(ground3, (i, scrHeight-(64*groundLevel[index])))
+            offsetBlit(ground3, (i, scrHeight-(64*groundLevel[index])))
         elif index != 0 and groundLevel[index] > groundLevel[index-1]:
-            win.blit(ground1, (i, scrHeight-(64*groundLevel[index])))
+            offsetBlit(ground1, (i, scrHeight-(64*groundLevel[index])))
         else:
-            win.blit(ground2, (i, scrHeight-(64*groundLevel[index])))
+            offsetBlit(ground2, (i, scrHeight-(64*groundLevel[index])))
         for j in range(0, 64*groundLevel[index], 64):
-            win.blit(ground5, (i, scrHeight-j))
+            offsetBlit(ground5, (i, scrHeight-j))
         
         if additionalObjectsList[index] and groundLevel[index]:
-            win.blit(additionalObjectsList[index], (i, scrHeight-(64*groundLevel[index] + 64)))
+            offsetBlit(additionalObjectsList[index], (i, scrHeight-(64*groundLevel[index] + 64)))
 
         index += 1
 
@@ -234,10 +248,12 @@ while running:
 
     if keys[pygame.K_LEFT] and playerMain.x >= playerMain.velocity - 90:
         playerMain.x -= playerMain.velocity
+        distance += moveSpeed
         playerMain.left, playerMain.right, playerMain.idle = True, False, False
         playerMain.walkCount += 1
     elif keys[pygame.K_RIGHT] and playerMain.x <= scrWidth - playerMain.width - playerMain.velocity:
         playerMain.x += playerMain.velocity
+        distance -= moveSpeed
         playerMain.left, playerMain.right, playerMain.idle = False, True, False
         playerMain.walkCount += 1
     else:
