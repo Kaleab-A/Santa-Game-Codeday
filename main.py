@@ -3,6 +3,7 @@ import random
 import math
 import time
 
+
 # Initalizing Pygame
 pygame.init()
 scrWidth = 1024
@@ -245,7 +246,6 @@ def drawGround():
     
         if drawableObjectList[index] and drawableGroundLevel[index]:
             win.blit(drawableObjectList[index], (i, scrHeight-(64*drawableGroundLevel[index] + 64)))
-        index += 1
 
 def bulletCollid(bulletX, bulletY, ghosts):
     for ghost in ghosts:
@@ -309,7 +309,6 @@ while running:
         playerMain.walkCount += 1
         santaPos += 1
         # ghost1.x -= 6
-
     else:
         playerMain.walkCount = 0
         playerMain.idle = True
