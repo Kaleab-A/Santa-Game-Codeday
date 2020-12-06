@@ -37,6 +37,10 @@ ground6 = pygame.transform.scale(ground6, (64, 64))
 water1, water2 = pygame.image.load(".//Images//wintertileset//png//Tiles//17.png"), pygame.image.load(".//Images//wintertileset//png//Tiles//18.png")
 water1 = pygame.transform.scale(water1, (64, 64))
 water2 = pygame.transform.scale(water2, (64, 64))
+
+heart = pygame.image.load(".//Images//heart.png")
+heart = pygame.transform.scale(heart, (20, 20))
+
 additionalObjects = []
 additionalObjects.append(pygame.image.load(".//Images//wintertileset//png//object//Crate.png"))
 additionalObjects.append(pygame.image.load(".//Images//wintertileset//png//object//Crystal.png"))
@@ -48,6 +52,7 @@ additionalObjects.append(pygame.image.load(".//Images//wintertileset//png//objec
 additionalObjects.append(pygame.image.load(".//Images//wintertileset//png//object//Stone.png"))
 additionalObjects.append(pygame.image.load(".//Images//wintertileset//png//object//Tree_1.png"))
 additionalObjects.append(pygame.image.load(".//Images//wintertileset//png//object//Tree_2.png"))
+
 for i in range(len(additionalObjects)):
     additionalObjects[i] = pygame.transform.scale(additionalObjects[i], (64, 64))
 
@@ -72,6 +77,7 @@ class Player (object):
         self.right = False
         self.idle = True
         self.walkCount = 0
+        self.health = 100
 
     def draw(self, win):
         self.x = int(self.x)
@@ -108,7 +114,7 @@ class projectile(object):
         pygame.draw.circle(win, self.color, (self.x, self.y), self.radius)
 
 
-class enemy(Player):
+class enemy(object):
     enemyLeft = []
     enemyRight = []
     for i in range(1, 5):
@@ -133,20 +139,19 @@ class enemy(Player):
         self.health = 100
 
     def draw(self, win):
-        if self.health > 0:
-            self.move()
-            # self.y = 300
-            # print(santaPos, (self.x // 64), groundLevel[santaPos -  (self.x // 64) ])
-            self.y = scrHeight - groundLevel[self.x // 64 + 1] * 64 - 50
-            if self.walkCount + 1 >= 4*3:
-                self.walkCount = 0
-            if self.end >= self.x:
-                win.blit(self.enemyRight[self.walkCount // 3], (self.x, self.y))
-            else: 
-                win.blit(self.enemyLeft[self.walkCount // 3], (self.x, self.y))
+        self.move()
+        # self.y = 300
+        # print(santaPos, (self.x // 64), groundLevel[santaPos -  (self.x // 64) ])
+        # self.y = scrHeight - groundLevel[self.x // 64 + 1] * 64 - 50
+        if self.walkCount + 1 >= 4*3:
+            self.walkCount = 0
+        if self.end >= self.x:
+            win.blit(self.enemyRight[self.walkCount // 3], (self.x, self.y))
+        else: 
+            win.blit(self.enemyLeft[self.walkCount // 3], (self.x, self.y))
 
-            pygame.draw.rect(win, color["red"], (self.x, self.y, self.width, self.height), 1)
-        
+        pygame.draw.rect(win, color["red"], (self.x, self.y, self.width, self.height), 1)
+    
     def move(self):
         # self.x += 1
         # if self.end >= self.x:
@@ -181,9 +186,7 @@ playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
 ghosts = []
 ghostCount = 10
 for i in range(ghostCount):
-    randX, randY = [random.randint(0, scrWidth), random.randint(0, scrHeight)]
-    print(randX, randY)
-    ghosts.append(enemy(randX, randY, 37, 45))
+    ghosts.append(enemy(random.randint(0, scrWidth), random.randint(0, scrHeight), 37, 45))
 running = True
 count = [0]
 groundLevel = []
@@ -247,6 +250,13 @@ def drawGround():
             win.blit(drawableObjectList[index], (i, scrHeight-(64*drawableGroundLevel[index] + 64)))
         index += 1
 
+def drawHealth(win, pos, healthValue):
+    # TODO Conditional Render by usiing healthValue
+    posX = pos[0]
+    for i in range(10):
+        win.blit(heart, (posX, pos[1]))
+        posX += 25
+
 def bulletCollid(bulletX, bulletY, ghosts):
     for ghost in ghosts:
         if bulletX > ghost.x and bulletX < ghost.x + ghost.width:
@@ -255,9 +265,13 @@ def bulletCollid(bulletX, bulletY, ghosts):
     return False
  
 def redrawGameWindow():
+    for ghost in ghosts:
+        if ghost.health <= 0:
+            ghosts.pop(ghosts.index(ghost))
     win.blit(bg, (0, 0))
     drawGround()
     playerMain.draw(win)
+    drawHealth(win, (700, 30), playerMain.health)
     # ghost1.end = playerMain.x
     for ghost in ghosts:
         ghost.draw(win)
