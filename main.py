@@ -8,6 +8,8 @@ import time
 pygame.init()
 scrWidth = 1024
 scrHeight = 512
+distance = 0
+moveSpeed = 10
 
 # Create the Screen
 win = pygame.display.set_mode((scrWidth, scrHeight))
@@ -85,7 +87,9 @@ class Player (object):
         self.x = int(self.x)
         self.y = int(self.y)
         if not self.isJump:
-            self.y = int(scrHeight - groundLevel[santaPos] * 64 - 64 - 50)
+            currentLevelIndex = distance // 64
+            if not (currentLevelIndex < 0 or currentLevelIndex > gameLength):
+                self.y = int(scrHeight - groundLevel[currentLevelIndex + 9] * 64 - 64 - 50)
 
         if self.walkCount + 1 > 13*3: self.walkCount = 0
         if self.idle:
@@ -205,6 +209,7 @@ class enemy(object):
         self.count += 1
         self.health -= 50
 
+
     def drawBullet(self):
         # bullet1 = projectile((2*self.x + self.width)//2,  (2*self.y + self.height)//2, 6, color["black"], target.x, target.y)
         for bullet in self.bullets:
@@ -218,6 +223,10 @@ class enemy(object):
                 bullet.draw(win)
         pass
             
+       
+def blitOffset(image, coordinates):
+    win.blit(image, (coordinates[0] - distance, coordinates[1]))
+
 playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
 ghosts = []
 ghostCount = 10
@@ -241,7 +250,7 @@ def drawGround():
         else:
             additionalObjectsList.append(0)
 
-        while len(groundLevel) < gameLength:
+        for i in range(gameLength):
             chance = random.randint(1, 10)
             if chance <= 3:
                 if len(range(max(0, prevLevel-3),  prevLevel)) != 0:
@@ -263,27 +272,29 @@ def drawGround():
 
             groundLevel.append(nextLevel)
             prevLevel = nextLevel
-        print( groundLevel)
 
-    drawableGroundLevel = groundLevel[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
+    # drawableGroundLevel = groundLevel[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
 
-    drawableObjectList = additionalObjectsList[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
+    # drawableObjectList = additionalObjectsList[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
     index = 0
-    for i in range(scrWidth//64):
+    for i in range(gameLength):
         i *= 64
-        if drawableGroundLevel[index] == 0:
-            win.blit(water1, (i, scrHeight-64))
-        elif index != len(drawableGroundLevel) -1 and drawableGroundLevel[index] > drawableGroundLevel[index+1]:
-            win.blit(ground3, (i, scrHeight-(64*drawableGroundLevel[index])))
-        elif index != 0 and drawableGroundLevel[index] > drawableGroundLevel[index-1]:
-            win.blit(ground1, (i, scrHeight-(64*drawableGroundLevel[index])))
+        if groundLevel[index] == 0:
+            blitOffset(water1, (i, scrHeight-64))
+        elif index != len(groundLevel) -1 and groundLevel[index] > groundLevel[index+1]:
+            blitOffset(ground3, (i, scrHeight-(64*groundLevel[index])))
+        elif index != 0 and groundLevel[index] > groundLevel[index-1]:
+            blitOffset(ground1, (i, scrHeight-(64*groundLevel[index])))
         else:
-            win.blit(ground2, (i, scrHeight-(64*drawableGroundLevel[index])))
-        for j in range(0, 64*drawableGroundLevel[index], 64):
-            win.blit(ground5, (i, scrHeight-j))
+            blitOffset(ground2, (i, scrHeight-(64*groundLevel[index])))
+        for j in range(0, 64*groundLevel[index], 64):
+            blitOffset(ground5, (i, scrHeight-j))
     
-        if drawableObjectList[index] and drawableGroundLevel[index]:
-            win.blit(drawableObjectList[index], (i, scrHeight-(64*drawableGroundLevel[index] + 64)))
+        if additionalObjectsList[index] and groundLevel[index]:
+            blitOffset(additionalObjectsList[index], (i, scrHeight-(64*groundLevel[index] + 64)))
+
+
+        index += 1
 
 def drawHealth(win, pos, healthValue):
     # TODO Conditional Render by usiing healthValue
@@ -343,9 +354,11 @@ while running:
 
     bullets = newBullets.copy()      
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] and santaPos > scrWidth // 128:
+    print(distance)
+    if keys[pygame.K_LEFT] and distance > 0:
         # playerMain.x >= playerMain.velocity - 90
         # playerMain.x -= playerMain.velocity
+        distance -= moveSpeed
         playerMain.left, playerMain.right, playerMain.idle = True, False, False
         playerMain.walkCount += 1
         santaPos -= 1
@@ -353,12 +366,13 @@ while running:
         # for ghost in ghosts:
         #     ghost.x += 64
         
-    elif keys[pygame.K_RIGHT] and santaPos < len(groundLevel) - (scrWidth // 128):
+    elif keys[pygame.K_RIGHT] and distance < (gameLength - 18gi) * 64:
         # playerMain.x <= scrWidth - playerMain.width - playerMain.velocity
         # playerMain.x += playerMain.velocity
+        distance += moveSpeed
         playerMain.left, playerMain.right, playerMain.idle = False, True, False
         playerMain.walkCount += 1
-        santaPos += 1
+        santaPos += 1 
         # ghost1.x -= 6
     else:
         playerMain.walkCount = 0
