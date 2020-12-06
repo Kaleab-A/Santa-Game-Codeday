@@ -3,6 +3,8 @@ import random
 import math
 import time
 
+from pygame import display
+
 
 # Initalizing Pygame
 pygame.init()
@@ -123,7 +125,7 @@ class projectile(object):
         self.width = width
         self.height = height
         self.color = color
-        magnitude = math.sqrt(self.changeInX ** 2 + self.changeInY ** 2)
+        magnitude = math.sqrt(self.changeInX ** 2 + self.changeInY ** 2) - 30
         if magnitude > 0:
             self.changeInX /= magnitude
             self.changeInY /= magnitude
@@ -151,7 +153,7 @@ class enemy(object):
         self.y = y
         self.width = width
         self.height = height
-        self.velocity = 6
+        self.velocity = 4
         self.walkCount = 0
         self.santaMovment = 0
         self.health = 100
@@ -160,28 +162,32 @@ class enemy(object):
         self.bulletsMove = []
         self.times = 1
         self.bulletSpeed = 40
-        self.shootingInterval = random.randint(50, 200)
+        self.shootingInterval = random.randint(50, 150)
+        self.display = True
 
     def draw(self, win):
-        if self.times % self.shootingInterval == 0:
-            bullet = projectile((2*self.x + self.width)//2,  (2*self.y + self.height)//2, 30, 9, color["black"], self.target, bulletImage)
-            self.bullets.append(bullet)
-            changeX = (self.target.x - bullet.x) 
-            changeY = (self.target.y - bullet.y)
-            changeX /= self.bulletSpeed
-            changeY /= self.bulletSpeed
-            self.bulletsMove.append([changeX, changeY])
+        if self.display == True:
+            if self.times % self.shootingInterval == 0:
+                bullet = projectile((2*self.x + self.width)//2,  (2*self.y + self.height)//2, 30, 9, color["black"], self.target, bulletImage)
+                self.bullets.append(bullet)
+                changeX = (self.target.x - bullet.x) 
+                changeY = (self.target.y - bullet.y)
+                changeX /= self.bulletSpeed
+                changeY /= self.bulletSpeed
+                self.bulletsMove.append([changeX, changeY])
 
-        self.move()
-        if self.walkCount + 1 >= 4*3:
-            self.walkCount = 0
-        if self.target.x >= self.x:
-            win.blit(self.enemyRight[self.walkCount // 3], (self.x, self.y))
-        else: 
-            win.blit(self.enemyLeft[self.walkCount // 3], (self.x, self.y))
+            self.move()
+            if self.walkCount + 1 >= 4*3:
+                self.walkCount = 0
+            if self.target.x >= self.x:
+                win.blit(self.enemyRight[self.walkCount // 3], (self.x, self.y))
+            else: 
+                win.blit(self.enemyLeft[self.walkCount // 3], (self.x, self.y))
 
-        # pygame.draw.rect(win, color["red"], (self.x, self.y, self.width, self.height), 1)
-        self.times += 1
+            # pygame.draw.rect(win, color["red"], (self.x, self.y, self.width, self.height), 1)
+            self.times += 1
+        else:
+            self.display = True
     
     def move(self):
         currYLevels = [getYatX(self.x, self.width, 0), getYatX(self.x, self.width, 1)]
@@ -192,6 +198,7 @@ class enemy(object):
 
     def hit(self):
         self.health -= 40
+        self.display = False
 
 
     def drawBullet(self):
@@ -264,8 +271,8 @@ def drawGround():
             if chance <= 3:
                 if len(range(max(0, prevLevel-3),  prevLevel)) != 0:
                     nextLevel = random.randint(max(0, prevLevel-3),  prevLevel-1)
-                if len(range(prevLevel+1,  prevLevel + 2)) != 0:
-                    nextLevel = random.randint(nextLevel, random.randint(prevLevel+1, prevLevel + 2))
+                if len(range(prevLevel+1,  min(4, prevLevel + 2))) != 0:
+                    nextLevel = random.randint(nextLevel, random.randint(prevLevel+1, min(4, prevLevel + 2)))
             elif chance == 4:
                 nextLevel = 0
             else:
@@ -403,6 +410,8 @@ while running:
         santaPos -= 1
         for ghost in ghosts:
             ghost.x += santaSpeedRelativeToGhost
+        for bullet in bullets:
+            bullet.x += santaSpeedRelativeToGhost
         
     elif keys[pygame.K_RIGHT] and distance < (gameLength - 18) * 64:
         distance += moveSpeed
@@ -413,6 +422,8 @@ while running:
             ghost.x -= santaSpeedRelativeToGhost
             for bullet in ghost.bullets:
                 bullet.x -= santaSpeedRelativeToGhost
+        for bullet in bullets:
+            bullet.x -= santaSpeedRelativeToGhost
     else:
         playerMain.walkCount = 0
         playerMain.idle = True
@@ -421,7 +432,6 @@ while running:
         if keys[pygame.K_UP]:
             playerMain.isJump = True
     if playerMain.isJump:
-        # print(playerMain.y, scrHeight - 64 * getYatX(playerMain.x), playerMain.width, 0)
         if playerMain.jumpCount >= -playerMain.initJumpCount:
             playerMain.jumpAmount = (playerMain.jumpCount ** 2) * playerMain.jumpConst
             if playerMain.jumpCount < 0:
