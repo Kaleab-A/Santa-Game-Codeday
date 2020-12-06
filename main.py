@@ -8,7 +8,7 @@ import time
 pygame.init()
 scrWidth = 1024
 scrHeight = 512
-distance = 0
+distance = 64 * 10
 moveSpeed = 10
 
 # Create the Screen
@@ -141,7 +141,7 @@ class enemy(object):
         enemyLeft.append(picture)
         enemyRight.append(pictureFlip)
     
-    def __init__(self, x, y, width, height):
+    def __init__(self, x, y, width, height, walkRange):
         self.x = x
         self.y = y
         self.width = width
@@ -157,6 +157,9 @@ class enemy(object):
         self.bulletsMove = []
         self.times = 1
         self.bulletSpeed = 20
+        self.walkRange = walkRange
+        self.walkSpeed = 1
+        self.facing = 1
 
     def draw(self, win):
         if self.times % 100 == 0:
@@ -167,44 +170,28 @@ class enemy(object):
             changeX /= 60
             changeY /= 60
             self.bulletsMove.append([changeX, changeY])
-
+        
         self.move()
         # self.y = 300
         # self.y = scrHeight - groundLevel[self.x // 64 + 1] * 64 - 50
         if self.walkCount + 1 >= 4*3:
             self.walkCount = 0
-        if self.end >= self.x:
-            win.blit(self.enemyRight[self.walkCount // 3], (self.x, self.y))
+        if self.facing == 1:
+            blitOffset(self.enemyRight[self.walkCount // 3], (self.x, self.y))
         else: 
-            win.blit(self.enemyLeft[self.walkCount // 3], (self.x, self.y))
+            blitOffset(self.enemyLeft[self.walkCount // 3], (self.x, self.y))
 
-        pygame.draw.rect(win, color["red"], (self.x, self.y, self.width, self.height), 1)
+        pygame.draw.rect(win, color["red"], (self.x - distance, self.y, self.width, self.height), 1)
         self.times += 1
     
     def move(self):
-        # self.x += 1
-        # if self.end >= self.x:
-        #     self.velocity = abs(self.velocity)
-        #     self.walkCount += 1
-        # else:
-        #     self.velocity = -abs(self.velocity)
-        #     self.walkCount +=1
-        # ghostMove = random.randint(0, 1)
-        # if ghostMove:
-        #     self.velocity = abs(self.velocity)
-        # else:
-        #     self.velocity = -abs(self.velocity)
-        # if scrWidth > self.x:
-        #     self.velocity = self.velocity
-        #     self.walkCount += 1
-        #     if scrWidth < 0:
-        #         self.velocity = abs(self.velocity)
-        # else:
-        #     self.velocity = -abs(self.velocity)
         self.walkCount += 1
-        # self.x = 400
-        # self.x += self.velocity
-        # self.santaMovment -= 1
+        if self.x <= self.walkRange[0] * 64:
+            self.facing = 1
+        elif self.x >= self.walkRange[1] * 64 - self.width:
+            self.facing = -1
+
+        self.x += self.facing * (self.walkSpeed)
 
     def hit(self):
         self.count += 1
@@ -225,7 +212,7 @@ class enemy(object):
                 angle =  180 - math.degrees( math.atan(currBulletDir[1]/currBulletDir[0]))
                 if bullet.x <= self.target.x:
                     angle += 180
-                print(angle  , currBulletDir[1]/currBulletDir[0])
+                # print(angle  , currBulletDir[1]/currBulletDir[0])
                 bullet.draw(win, angle)
         pass
             
@@ -234,53 +221,52 @@ def blitOffset(image, coordinates):
     win.blit(image, (coordinates[0] - distance, coordinates[1]))
 
 playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
-ghosts = []
-ghostCount = 10
-for i in range(ghostCount):
-    ghosts.append(enemy(random.randint(0, scrWidth), random.randint(0, scrHeight), 37, 45))
+# ghosts = []
+# ghostCount = 10
+# for i in range(ghostCount):
+#     ghosts.append(enemy(random.randint(0, scrWidth), random.randint(0, scrHeight), 37, 45))
 running = True
 count = [0]
-groundLevel = []
 additionalObjectsList = []
 gameLength = 100
 santaPos = gameLength // 2
-def drawGround():
-    if groundLevel == []:
-        prevLevel = 3
-        groundLevel.append(prevLevel)
-        nextLevel = prevLevel
 
-        isObjectAdded = random.choices([0, 1], [0.7, 0.3])[0]
-        if isObjectAdded:
-            additionalObjectsList.append(random.choice(additionalObjects))
+def generateGround():
+    prevLevel = 3
+    groundLevel = [prevLevel]
+    nextLevel = prevLevel
+
+    isObjectAdded = random.choices([0, 1], [0.7, 0.3])[0]
+    if isObjectAdded:
+        additionalObjectsList.append(random.choice(additionalObjects))
+    else:
+        additionalObjectsList.append(0)
+
+    for i in range(gameLength):
+        chance = random.randint(1, 10)
+        if chance <= 3:
+            if len(range(max(0, prevLevel-3),  prevLevel)) != 0:
+                nextLevel = random.randint(max(0, prevLevel-3),  prevLevel-1)
+            if len(range(prevLevel+1,  prevLevel + 2)) != 0:
+                nextLevel = random.randint(nextLevel, random.randint(prevLevel+1, prevLevel + 2))
+        elif chance == 4:
+            nextLevel = 0
         else:
-            additionalObjectsList.append(0)
+            nextLevel = prevLevel
+        groundLevel.append(nextLevel)
 
-        for i in range(gameLength):
-            chance = random.randint(1, 10)
-            if chance <= 3:
-                if len(range(max(0, prevLevel-3),  prevLevel)) != 0:
-                    nextLevel = random.randint(max(0, prevLevel-3),  prevLevel-1)
-                if len(range(prevLevel+1,  prevLevel + 2)) != 0:
-                    nextLevel = random.randint(nextLevel, random.randint(prevLevel+1, prevLevel + 2))
-            elif chance == 4:
-                nextLevel = 0
-            else:
-                nextLevel = prevLevel
-            groundLevel.append(nextLevel)
+        for i in range(2):
+            changeObjectAppear = random.randint(0, 4)
+            if changeObjectAppear == 0:
+                changeObject = random.randint(0, 9)
+                additionalObjectsList.append(additionalObjects[changeObject])
+            else: additionalObjectsList.append(0)
 
-            for i in range(2):
-                changeObjectAppear = random.randint(0, 4)
-                if changeObjectAppear == 0:
-                    changeObject = random.randint(0, 9)
-                    additionalObjectsList.append(additionalObjects[changeObject])
-                else: additionalObjectsList.append(0)
+        groundLevel.append(nextLevel)
+        prevLevel = nextLevel
+    return groundLevel
 
-            groundLevel.append(nextLevel)
-            prevLevel = nextLevel
-
-    # drawableGroundLevel = groundLevel[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
-    # drawableObjectList = additionalObjectsList[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
+def drawGround():
     index = 0
     for i in range(gameLength):
         i *= 64
@@ -302,7 +288,6 @@ def drawGround():
         index += 1
 
 def drawHealth(win, pos, healthValue):
-    # TODO Conditional Render by using healthValue
     posX = pos[0]
     for i in range(healthValue // 10):
         win.blit(heart, (posX, pos[1]))
@@ -321,19 +306,39 @@ def bulletCollid(bulletX, bulletY, ghosts):
 
     return False
  
+def generateGhosts():
+    ghosts = []
+    index = 0
+    while index < gameLength:
+        addGhost = random.choices([0, 1], [.65, .35])[0]
+        walkRangeLeft, walkRangeRight = index, index
+        while walkRangeRight < gameLength and groundLevel[walkRangeLeft] == groundLevel[walkRangeRight]:
+            walkRangeRight += 1
+        
+        if addGhost == 1:
+            ghosts.append(enemy(walkRangeLeft * 64, scrHeight - (groundLevel[walkRangeLeft] + 1) * 64, 37, 45, (walkRangeLeft, walkRangeRight)))
+        
+        index += walkRangeRight - walkRangeLeft
+            
+    return ghosts
+
+groundLevel = generateGround()
+ghosts = generateGhosts()
 def redrawGameWindow():
     for ghost in ghosts:
         if ghost.health <= 0:
-            ghosts.pop(ghosts.index(ghost))
+            ghosts.remove(ghost)
     win.blit(bg, (0, 0))
     drawGround()
     playerMain.draw(win)
     drawHealth(win, (700, 30), playerMain.health)
     # ghost1.end = playerMain.x
     for ghost in ghosts:
+        # print("Range", ghost.y)
         ghost.target = playerMain
         ghost.draw(win)
         ghost.drawBullet()
+
     for bullet in bullets:
         hitGhost = bulletCollid(bullet.x, bullet.y, ghosts)
         if hitGhost:
@@ -343,6 +348,8 @@ def redrawGameWindow():
             bullet.draw(win, 0)
     count[0] += 1
     pygame.display.update()
+
+    #
 
 bullets = []
 while running:
