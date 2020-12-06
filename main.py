@@ -10,6 +10,7 @@ scrWidth = 1024
 scrHeight = 512
 distance = 0
 moveSpeed = 10
+font = pygame.font.SysFont("arial", 48)
 
 # Create the Screen
 win = pygame.display.set_mode((scrWidth, scrHeight))
@@ -320,13 +321,18 @@ def bulletCollid(bulletX, bulletY, ghosts):
 
     return False
  
+score = 0
 def redrawGameWindow():
     global shouldCreateGhost
     global renderTimes
+    global score
+
     for ghost in ghosts:
         if ghost.health <= 0:
             ghosts.pop(ghosts.index(ghost))
             del ghost
+            score += 1
+
 
     win.blit(bg, (0, 0))
     drawGround()
@@ -365,6 +371,9 @@ def redrawGameWindow():
             bullet.draw(win, 0)
     count[0] += 1
     shouldCreateGhost -= int(4/shouldCreateGhost)
+    scoreImage = font.render(str(score), True, color["white"])
+    win.blit(scoreImage, (10, 10))
+
     pygame.display.update()
 
 while running:
@@ -423,6 +432,14 @@ while running:
         else:
             playerMain.isJump = False
             playerMain.jumpCount = playerMain.initJumpCount
+    
+    if playerMain.health <= 0:
+        win.fill((255, 255, 255))
+        lost = font.render("You lost!", True, color["black"])
+        win.blit(lost, (scrWidth // 2 - 100, scrHeight // 2))
+        pygame.display.update()
+        time.sleep(1)
+        pygame.quit()
         
     redrawGameWindow()
 
