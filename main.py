@@ -125,7 +125,7 @@ class projectile(object):
         self.speed = 8
         self.image = image
         
-    def draw(self, win, angle):
+    def draw(self, win, angle):        
         win.blit(pygame.transform.rotate(self.image, angle), ((self.x, self.y)))
         pygame.draw.rect(win, color["red"], (self.x, self.y, self.width, self.height), 1)
         # pygame.draw.circle(win, self.color, (self.x, self.y), self.radius)
@@ -216,6 +216,12 @@ class enemy(object):
     def drawBullet(self):
         for bullet in self.bullets:
             # Bullet to Santa Collusion
+            bulletXPos = distance - (scrWidth // 2) + bullet.x
+            groundAtY = groundLevel[bulletXPos//64 + 8]
+            if bullet.y >= scrHeight - groundAtY * 64:
+                self.bullets.pop(self.bullets.index(bullet))
+                continue
+            
             currBulletDir = self.bulletsMove[self.bullets.index(bullet)]
             bullet.x += round(currBulletDir[0])
             bullet.y += round(currBulletDir[1])
@@ -241,7 +247,7 @@ def blitOffset(image, coordinates):
 
 playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
 ghosts = []
-ghostCount = 10
+ghostCount = 1
 for i in range(ghostCount):
     ghosts.append(enemy(random.randint(0, scrWidth), random.randint(0, scrHeight-64), 37, 45))
 running = True
@@ -342,6 +348,11 @@ def redrawGameWindow():
         ghost.draw(win)
         ghost.drawBullet()
     for bullet in bullets:
+        bulletXPos = distance - (scrWidth // 2) + bullet.x
+        groundAtY = groundLevel[bulletXPos//64 + 8]
+        if bullet.y >= scrHeight - groundAtY * 64:
+            bullets.pop(bullets.index(bullet))
+            continue
         hitGhost = bulletCollid(bullet.x, bullet.y, ghosts)
         if hitGhost:
             bullets.pop(bullets.index(bullet))
