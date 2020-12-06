@@ -29,6 +29,8 @@ for i in range(1, 14):
     walkLeft.append(pictureFlip)
 bg = pygame.image.load(".//Images//wintertileset//png//BG//BG.png")
 bg = pygame.transform.scale(bg, (scrWidth, scrHeight))
+bulletImage = pygame.image.load(".//Images//bullets//bullet2.png")
+bulletImage = pygame.transform.scale(bulletImage, (30, 9))
 ground1, ground2, ground3 = pygame.image.load(".//Images//wintertileset//png//Tiles//1.png"), pygame.image.load(".//Images//wintertileset//png//Tiles//2.png"), pygame.image.load(".//Images//wintertileset//png//Tiles//3.png")
 ground4, ground5, ground6 = pygame.image.load(".//Images//wintertileset//png//Tiles//4.png"), pygame.image.load(".//Images//wintertileset//png//Tiles//5.png"), pygame.image.load(".//Images//wintertileset//png//Tiles//6.png"), 
 ground1 = pygame.transform.scale(ground1, (64, 64))
@@ -83,7 +85,6 @@ class Player (object):
         self.health = 100
 
     def draw(self, win):
-        print(self.health)
         self.x = int(self.x)
         self.y = int(self.y)
         if not self.isJump:
@@ -123,8 +124,8 @@ class projectile(object):
         self.speed = 8
         self.image = image
         
-    def draw(self, win):
-        win.blit(self.image, ((self.x, self.y)))
+    def draw(self, win, angle):
+        win.blit(pygame.transform.rotate(self.image, angle), ((self.x, self.y)))
         # pygame.draw.circle(win, self.color, (self.x, self.y), self.radius)
 
 
@@ -158,14 +159,14 @@ class enemy(object):
         self.bulletSpeed = 20
 
     def draw(self, win):
-        if self.times % 150 == 0:
-            bullet = projectile((2*self.x + self.width)//2,  (2*self.y + self.height)//2, 6, color["black"], self.target, heart)
+        if self.times % 100 == 0:
+            bullet = projectile((2*self.x + self.width)//2,  (2*self.y + self.height)//2, 6, color["black"], self.target, bulletImage)
             self.bullets.append(bullet)
             changeX = (self.target.x - bullet.x) 
             changeY = (self.target.y - bullet.y)
             changeX /= 60
             changeY /= 60
-            self.bulletsMove.append([round(changeX), round(changeY)])
+            self.bulletsMove.append([changeX, changeY])
 
         self.move()
         # self.y = 300
@@ -214,13 +215,18 @@ class enemy(object):
         # bullet1 = projectile((2*self.x + self.width)//2,  (2*self.y + self.height)//2, 6, color["black"], target.x, target.y)
         for bullet in self.bullets:
             # print("Bullet", bullet.x, bullet.y, self.target.x, self.target.y, slope)
-            bullet.x += self.bulletsMove[self.bullets.index(bullet)][0]
-            bullet.y += self.bulletsMove[self.bullets.index(bullet)][1]
+            currBulletDir = self.bulletsMove[self.bullets.index(bullet)]
+            bullet.x += round(currBulletDir[0])
+            bullet.y += round(currBulletDir[1])
             if bulletCollid(bullet.x, bullet.y, [self.target]):
                 self.bullets.pop(self.bullets.index(bullet))
                 self.target.health -= 10
             else:
-                bullet.draw(win)
+                angle =  180 - math.degrees( math.atan(currBulletDir[1]/currBulletDir[0]))
+                if bullet.x <= self.target.x:
+                    angle += 180
+                print(angle  , currBulletDir[1]/currBulletDir[0])
+                bullet.draw(win, angle)
         pass
             
        
@@ -274,7 +280,6 @@ def drawGround():
             prevLevel = nextLevel
 
     # drawableGroundLevel = groundLevel[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
-
     # drawableObjectList = additionalObjectsList[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
     index = 0
     for i in range(gameLength):
@@ -297,7 +302,7 @@ def drawGround():
         index += 1
 
 def drawHealth(win, pos, healthValue):
-    # TODO Conditional Render by usiing healthValue
+    # TODO Conditional Render by using healthValue
     posX = pos[0]
     for i in range(10):
         win.blit(heart, (posX, pos[1]))
@@ -329,7 +334,7 @@ def redrawGameWindow():
             bullets.pop(bullets.index(bullet))
             hitGhost.hit()
         else:
-            bullet.draw(win)
+            bullet.draw(win, 0)
     count[0] += 1
     pygame.display.update()
 
@@ -354,7 +359,6 @@ while running:
 
     bullets = newBullets.copy()      
     keys = pygame.key.get_pressed()
-    print(distance)
     if keys[pygame.K_LEFT] and distance > 0:
         # playerMain.x >= playerMain.velocity - 90
         # playerMain.x -= playerMain.velocity
@@ -366,7 +370,7 @@ while running:
         # for ghost in ghosts:
         #     ghost.x += 64
         
-    elif keys[pygame.K_RIGHT] and distance < (gameLength - 18gi) * 64:
+    elif keys[pygame.K_RIGHT] and distance < (gameLength - 18) * 64:
         # playerMain.x <= scrWidth - playerMain.width - playerMain.velocity
         # playerMain.x += playerMain.velocity
         distance += moveSpeed
