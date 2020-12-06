@@ -134,7 +134,6 @@ class projectile(object):
     def draw(self, win, angle):        
         win.blit(pygame.transform.rotate(self.image, angle), ((self.x, self.y)))
         pygame.draw.rect(win, color["red"], (self.x, self.y, self.width, self.height), 1)
-        # pygame.draw.circle(win, self.color, (self.x, self.y), self.radius)
 
 
 class enemy(object):
@@ -144,7 +143,6 @@ class enemy(object):
         path = ".//Images//Enemy//Ghost//Png_animation//"
         name = "Ghost" + str(i) + ".png"
         picture = pygame.image.load(path + name)
-        # picture = pygame.transform.scale(picture, (186, 128))
         pictureFlip = pygame.transform.flip(picture, True, False)
         enemyLeft.append(picture)
         enemyRight.append(pictureFlip)
@@ -155,19 +153,18 @@ class enemy(object):
         self.width = width
         self.height = height
         self.velocity = 6
-        self.end = 0
         self.walkCount = 0
         self.santaMovment = 0
-        self.count = 0
         self.health = 100
         self.target = None
         self.bullets = []
         self.bulletsMove = []
         self.times = 1
         self.bulletSpeed = 40
+        self.shootingInterval = random.randint(50, 200)
 
     def draw(self, win):
-        if self.times % 100 == 0:
+        if self.times % self.shootingInterval == 0:
             bullet = projectile((2*self.x + self.width)//2,  (2*self.y + self.height)//2, 30, 9, color["black"], self.target, bulletImage)
             self.bullets.append(bullet)
             changeX = (self.target.x - bullet.x) 
@@ -177,8 +174,6 @@ class enemy(object):
             self.bulletsMove.append([changeX, changeY])
 
         self.move()
-        # self.y = 300
-        # self.y = scrHeight - groundLevel[self.x // 64 + 1] * 64 - 50
         if self.walkCount + 1 >= 4*3:
             self.walkCount = 0
         if self.target.x >= self.x:
@@ -190,33 +185,14 @@ class enemy(object):
         self.times += 1
     
     def move(self):
-        # if self.end >= self.x:
-        #     self.velocity = abs(self.velocity)
-        #     self.walkCount += 1
-        # else:
-        #     self.velocity = -abs(self.velocity)
-        #     self.walkCount +=1
-        # ghostMove = random.randint(0, 1)
-        # if ghostMove:
-        #     self.velocity = abs(self.velocity)
-        # else:
-        #     self.velocity = -abs(self.velocity)
-        # if scrWidth > self.x:
-        #     self.velocity = self.velocity
-        #     self.walkCount += 1
-        #     if scrWidth < 0:
-        #         self.velocity = abs(self.velocity)
-        # else:
-        #     self.velocity = -abs(self.velocity)
+        currYLevels = [getYatX(self.x, self.width, 0), getYatX(self.x, self.width, 1)]
+        if self.y >= scrHeight - currYLevels[0] * 64 and self.y >= scrHeight - currYLevels[1] * 64:
+            self.velocity = -self.velocity
+        self.x += self.velocity
         self.walkCount += 1
-        self.x += 1
-        # self.x = 400
-        # self.x += self.velocity
-        # self.santaMovment -= 1
 
     def hit(self):
-        self.count += 1
-        self.health -= 50
+        self.health -= 40
 
 
     def drawBullet(self):
@@ -224,7 +200,7 @@ class enemy(object):
             # Bullet to Santa Collusion
             bulletXPos = distance - (scrWidth // 2) + bullet.x
             groundAtY = groundLevel[bulletXPos//64 + 8]
-            if bullet.y >= scrHeight - groundAtY * 64:
+            if bullet.y >= scrHeight - groundAtY * 64 or bullet.x >= scrWidth or bullet.x <= 0:
                 self.bullets.pop(self.bullets.index(bullet))
                 continue
             
@@ -248,14 +224,21 @@ class enemy(object):
                             ghost.bullets.pop(ghost.bullets.index(bullet))
                             bullets.pop(bullets.index(santaLove))
        
+def getYatX(x, width, which):
+    if which:
+        xPos = distance - (scrWidth // 2) + x
+        return groundLevel[xPos //64 + 8]
+    else:
+        xPos = distance - (scrWidth // 2) + x + width
+        return groundLevel[xPos //64 + 8]
+
 def blitOffset(image, coordinates):
     win.blit(image, (coordinates[0] - distance, coordinates[1]))
 
+shouldCreateGhost = 100
+renderTimes = 0
 playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
 ghosts = []
-ghostCount = 10
-for i in range(ghostCount):
-    ghosts.append(enemy(random.randint(0, scrWidth), random.randint(0, scrHeight-64), 37, 45))
 running = True
 count = [0]
 groundLevel = []
@@ -264,6 +247,7 @@ gameLength = 100
 santaPos = gameLength // 2
 bullets = []
 santaSpeedRelativeToGhost = 10
+
 def drawGround():
     if groundLevel == []:
         prevLevel = 3
@@ -299,8 +283,6 @@ def drawGround():
             groundLevel.append(nextLevel)
             prevLevel = nextLevel
 
-    # drawableGroundLevel = groundLevel[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
-    # drawableObjectList = additionalObjectsList[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
     index = 0
     for i in range(gameLength):
         i *= 64
@@ -322,7 +304,6 @@ def drawGround():
         index += 1
 
 def drawHealth(win, pos, healthValue):
-    # TODO Conditional Render by using healthValue
     posX = pos[0]
     for i in range(healthValue // 10):
         win.blit(heart, (posX, pos[1]))
@@ -342,6 +323,8 @@ def bulletCollid(bulletX, bulletY, ghosts):
     return False
  
 def redrawGameWindow():
+    global shouldCreateGhost
+    global renderTimes
     for ghost in ghosts:
         if ghost.health <= 0:
             ghosts.pop(ghosts.index(ghost))
@@ -349,9 +332,21 @@ def redrawGameWindow():
 
     win.blit(bg, (0, 0))
     drawGround()
+
+    if renderTimes % shouldCreateGhost == 0:
+        while True:
+            randX = random.randint(0, scrWidth)
+            randY = random.randint(0, scrHeight-64)
+            currYLevels = [getYatX(randX, 37, 0), getYatX(randX, 37, 1)]
+            if randY >= scrHeight - currYLevels[0] * 64 and randY >= scrHeight - currYLevels[1] * 64:
+                    pass
+            else:
+                ghosts.append(enemy(randX, randY, 37, 45) )
+                break
+    renderTimes += 1
+
     playerMain.draw(win)
     drawHealth(win, (700, 30), playerMain.health)
-    # ghost1.end = playerMain.x
     for ghost in ghosts:
         ghost.target = playerMain
         ghost.draw(win)
@@ -360,7 +355,7 @@ def redrawGameWindow():
     for bullet in bullets:
         bulletXPos = distance - (scrWidth // 2) + bullet.x
         groundAtY = groundLevel[bulletXPos//64 + 8]
-        if bullet.y >= scrHeight - groundAtY * 64:
+        if bullet.y >= scrHeight - groundAtY * 64 or bullet.x >= scrWidth or bullet.x <= 0:
             bullets.pop(bullets.index(bullet))
             continue
 
@@ -371,6 +366,7 @@ def redrawGameWindow():
         else:
             bullet.draw(win, 0)
     count[0] += 1
+    shouldCreateGhost -= int(4/shouldCreateGhost)
     pygame.display.update()
 
 def restartGame():
@@ -470,53 +466,59 @@ def pauseMenu():
         pygame.display.update()
 
 def playGame():
-    running = True
-    global bullets, distance, santaPos
-    while running:
-        clock.tick(30)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_ESCAPE:
-                    pauseMenu()
-            if event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1:
-                    mousePosition = pygame.mouse.get_pos()
-                    if len(bullets) < 10:
-                        bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 20, 20, color["red"], mousePosition, heart))
+   while running:
+    clock.tick(30)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONUP:
+            mousePosition = pygame.mouse.get_pos()
+            if len(bullets) < 10:
+                bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 20, 20, color["red"], mousePosition, heart))
 
-        newBullets = []
-        for index in range(len(bullets)):
-            bullet = bullets[index]
-            if bullet.x  < scrWidth and bullet.x > 0 and bullet.y < scrHeight and bullet.y > 0:
-                bullet.x += int(bullet.changeInX * bullet.speed)
-                bullet.y -= int(bullet.changeInY * bullet.speed)
-                newBullets.append(bullet)  
+    newBullets = []
+    for index in range(len(bullets)):
+        bullet = bullets[index]
+        if bullet.x  < scrWidth and bullet.x > 0 and bullet.y < scrHeight and bullet.y > 0:
+            bullet.x += int(bullet.changeInX * bullet.speed)
+            bullet.y -= int(bullet.changeInY * bullet.speed)
+            newBullets.append(bullet)  
 
-        bullets = newBullets.copy()      
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT] and distance > 0:
-            # playerMain.x >= playerMain.velocity - 90
-            # playerMain.x -= playerMain.velocity
-            distance -= moveSpeed
-            playerMain.left, playerMain.right, playerMain.idle = True, False, False
-            playerMain.walkCount += 1
-            santaPos -= 1
-            for ghost in ghosts:
-                ghost.x += santaSpeedRelativeToGhost
-            
-        elif keys[pygame.K_RIGHT] and distance < (gameLength - 18) * 64:
-            # playerMain.x <= scrWidth - playerMain.width - playerMain.velocity
-            # playerMain.x += playerMain.velocity
-            distance += moveSpeed
-            playerMain.left, playerMain.right, playerMain.idle = False, True, False
-            playerMain.walkCount += 1
-            santaPos += 1 
-            for ghost in ghosts:
-                ghost.x -= santaSpeedRelativeToGhost
-                for bullet in ghost.bullets:
-                    bullet.x -= santaSpeedRelativeToGhost
+    bullets = newBullets.copy()      
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT] and distance > 0:
+        distance -= moveSpeed
+        playerMain.left, playerMain.right, playerMain.idle = True, False, False
+        playerMain.walkCount += 1
+        santaPos -= 1
+        for ghost in ghosts:
+            ghost.x += santaSpeedRelativeToGhost
+        
+    elif keys[pygame.K_RIGHT] and distance < (gameLength - 18) * 64:
+        distance += moveSpeed
+        playerMain.left, playerMain.right, playerMain.idle = False, True, False
+        playerMain.walkCount += 1
+        santaPos += 1 
+        for ghost in ghosts:
+            ghost.x -= santaSpeedRelativeToGhost
+            for bullet in ghost.bullets:
+                bullet.x -= santaSpeedRelativeToGhost
+    else:
+        playerMain.walkCount = 0
+        playerMain.idle = True
+
+    if not playerMain.isJump:
+        if keys[pygame.K_UP]:
+            playerMain.isJump = True
+    if playerMain.isJump:
+        # print(playerMain.y, scrHeight - 64 * getYatX(playerMain.x), playerMain.width, 0)
+        if playerMain.jumpCount >= -playerMain.initJumpCount:
+            playerMain.jumpAmount = (playerMain.jumpCount ** 2) * playerMain.jumpConst
+            if playerMain.jumpCount < 0:
+                playerMain.y += playerMain.jumpAmount
+            else:
+                playerMain.y -= playerMain.jumpAmount
+            playerMain.jumpCount -= 1
         else:
             playerMain.walkCount = 0
             playerMain.idle = True
