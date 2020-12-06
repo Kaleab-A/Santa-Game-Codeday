@@ -8,6 +8,8 @@ import time
 pygame.init()
 scrWidth = 1024
 scrHeight = 512
+distance = 0
+moveSpeed = 10
 
 # Create the Screen
 win = pygame.display.set_mode((scrWidth, scrHeight))
@@ -182,7 +184,10 @@ class enemy(object):
         self.count += 1
         self.health -= 50
         print("HIT", self.count)
-            
+
+def blitOffset(image, coordinates):
+    win.blit(image, (coordinates[0] + distance, coordinates[1] + distance))
+
 playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
 ghosts = []
 ghostCount = 10
@@ -228,27 +233,27 @@ def drawGround():
 
             groundLevel.append(nextLevel)
             prevLevel = nextLevel
-        print( groundLevel)
+        print(groundLevel)
 
-    drawableGroundLevel = groundLevel[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
+    # drawableGroundLevel = groundLevel[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
 
-    drawableObjectList = additionalObjectsList[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
+    # drawableObjectList = additionalObjectsList[santaPos - (scrWidth//128): santaPos + (scrWidth//128)]
     index = 0
-    for i in range(scrWidth//64):
+    for i in range(len(groundLevel)):
         i *= 64
-        if drawableGroundLevel[index] == 0:
+        if groundLevel[index] == 0:
             win.blit(water1, (i, scrHeight-64))
-        elif index != len(drawableGroundLevel) -1 and drawableGroundLevel[index] > drawableGroundLevel[index+1]:
-            win.blit(ground3, (i, scrHeight-(64*drawableGroundLevel[index])))
-        elif index != 0 and drawableGroundLevel[index] > drawableGroundLevel[index-1]:
-            win.blit(ground1, (i, scrHeight-(64*drawableGroundLevel[index])))
+        elif index != len(groundLevel) -1 and groundLevel[index] > groundLevel[index+1]:
+            win.blit(ground3, (i, scrHeight-(64*groundLevel[index])))
+        elif index != 0 and groundLevel[index] > groundLevel[index-1]:
+            win.blit(ground1, (i, scrHeight-(64*groundLevel[index])))
         else:
-            win.blit(ground2, (i, scrHeight-(64*drawableGroundLevel[index])))
-        for j in range(0, 64*drawableGroundLevel[index], 64):
+            win.blit(ground2, (i, scrHeight-(64*groundLevel[index])))
+        for j in range(0, 64*groundLevel[index], 64):
             win.blit(ground5, (i, scrHeight-j))
     
-        if drawableObjectList[index] and drawableGroundLevel[index]:
-            win.blit(drawableObjectList[index], (i, scrHeight-(64*drawableGroundLevel[index] + 64)))
+        if additionalObjectsList[index] and groundLevel[index]:
+            win.blit(additionalObjectsList[index], (i, scrHeight-(64*groundLevel[index] + 64)))
 
 def drawHealth(win, pos, healthValue):
     # TODO Conditional Render by usiing healthValue
@@ -309,6 +314,7 @@ while running:
     if keys[pygame.K_LEFT] and santaPos > scrWidth // 128:
         # playerMain.x >= playerMain.velocity - 90
         # playerMain.x -= playerMain.velocity
+        distance -= moveSpeed
         playerMain.left, playerMain.right, playerMain.idle = True, False, False
         playerMain.walkCount += 1
         santaPos -= 1
@@ -319,6 +325,7 @@ while running:
     elif keys[pygame.K_RIGHT] and santaPos < len(groundLevel) - (scrWidth // 128):
         # playerMain.x <= scrWidth - playerMain.width - playerMain.velocity
         # playerMain.x += playerMain.velocity
+        distance += moveSpeed
         playerMain.left, playerMain.right, playerMain.idle = False, True, False
         playerMain.walkCount += 1
         santaPos += 1
