@@ -10,6 +10,8 @@ scrWidth = 1024
 scrHeight = 512
 distance = 0
 moveSpeed = 10
+font = pygame.font.SysFont("arial", 48)
+font2 = pygame.font.SysFont("arial", 60)
 
 # Create the Screen
 win = pygame.display.set_mode((scrWidth, scrHeight))
@@ -371,66 +373,207 @@ def redrawGameWindow():
     count[0] += 1
     pygame.display.update()
 
-while running:
-    clock.tick(30)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.MOUSEBUTTONUP:
-            mousePosition = pygame.mouse.get_pos()
-            if len(bullets) < 10:
-                bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 20, 20, color["red"], mousePosition, heart))
+def restartGame():
+    global groundLevel, additionalObjectsList, bullets, ghosts, ghostCount
+    ghosts = []
+    for i in range(ghostCount):
+       ghosts.append(enemy(random.randint(0, scrWidth), random.randint(0, scrHeight-64), 37, 45))
+    groundLevel = []
+    additionalObjectsList = []
+    bullets = []
 
-    newBullets = []
-    for index in range(len(bullets)):
-        bullet = bullets[index]
-        if bullet.x  < scrWidth and bullet.x > 0 and bullet.y < scrHeight and bullet.y > 0:
-            bullet.x += int(bullet.changeInX * bullet.speed)
-            bullet.y -= int(bullet.changeInY * bullet.speed)
-            newBullets.append(bullet)  
-
-    bullets = newBullets.copy()      
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] and distance > 0:
-        # playerMain.x >= playerMain.velocity - 90
-        # playerMain.x -= playerMain.velocity
-        distance -= moveSpeed
-        playerMain.left, playerMain.right, playerMain.idle = True, False, False
-        playerMain.walkCount += 1
-        santaPos -= 1
-        for ghost in ghosts:
-            ghost.x += santaSpeedRelativeToGhost
+def endGame():
+    running = True
+    while running:
+        win.fill((255, 255, 255))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    if exitGame.collidepoint(pygame.mouse.get_pos()):
+                        menu()
+                        running = False
+                        pygame.quit()
+                    elif restart.collidepoint(pygame.mouse.get_pos()):
+                        restartGame()
+                        playGame()
+                        running = False
+                        pygame.quit()     
         
-    elif keys[pygame.K_RIGHT] and distance < (gameLength - 18) * 64:
-        # playerMain.x <= scrWidth - playerMain.width - playerMain.velocity
-        # playerMain.x += playerMain.velocity
-        distance += moveSpeed
-        playerMain.left, playerMain.right, playerMain.idle = False, True, False
-        playerMain.walkCount += 1
-        santaPos += 1 
-        for ghost in ghosts:
-            ghost.x -= santaSpeedRelativeToGhost
-            for bullet in ghost.bullets:
-                bullet.x -= santaSpeedRelativeToGhost
-    else:
-        playerMain.walkCount = 0
-        playerMain.idle = True
+        youFailed = font2.render("You failed!", True, color["black"])
+        win.blit(youFailed, (scrWidth // 2 - 135, scrHeight // 2 - 100))
 
-    if not playerMain.isJump:
-        if keys[pygame.K_UP]:
-            playerMain.isJump = True
-    if playerMain.isJump:
-        if playerMain.jumpCount >= -playerMain.initJumpCount:
-            playerMain.jumpAmount = (playerMain.jumpCount ** 2) * playerMain.jumpConst
-            if playerMain.jumpCount < 0:
-                playerMain.y += playerMain.jumpAmount
-            else:
-                playerMain.y -= playerMain.jumpAmount
-            playerMain.jumpCount -= 1
+        restartFont = font.render("Restart", True, color["white"]) 
+        restartW, restartH = 400, 100
+        retartX, restartY = scrWidth // 2 - restartW // 2, scrHeight // 2 - restartH + 100
+        restart = pygame.Rect(retartX, restartY, restartW, restartH)
+        pygame.draw.rect(win, color["black"], restart)
+        win.blit(restartFont, (retartX + 120, restartY + 15))
+
+        exitFont = font.render("Menu", True, color["white"]) 
+        exitGameW, exitGameH = 400, 100
+        exitX, exitY = scrWidth // 2 - exitGameW // 2, scrHeight // 2 - exitGameH + 200
+        exitGame = pygame.Rect(exitX, exitY, exitGameW, exitGameH)
+        pygame.draw.rect(win, color["red"], exitGame)
+        win.blit(exitFont, (exitX + 140, exitY + 15))
+
+        pygame.display.update()
+
+
+    
+def pauseMenu():
+    running = True
+    while running:
+        win.fill((255, 255, 255))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    if exitGame.collidepoint(pygame.mouse.get_pos()):
+                        restartGame()
+                        menu()
+                        running = False
+                        pygame.quit()
+                    elif resumeGame.collidepoint(pygame.mouse.get_pos()):
+                        running = False
+                    elif restart.collidepoint(pygame.mouse.get_pos()):
+                        restartGame()
+                        playGame()
+                        running = False
+                        pygame.quit()                        
+                    
+        
+        resumeFont = font.render("Resume", True, color["white"])
+        resumeGameW, resumeGameH = 400, 100
+        resumeX, resumeY = scrWidth // 2 - resumeGameW // 2, scrHeight // 2 - resumeGameH // 2 - 100
+        resumeGame = pygame.Rect(resumeX, resumeY, resumeGameW, resumeGameH)
+        pygame.draw.rect(win, color["blue"], resumeGame)
+        win.blit(resumeFont, (resumeX + 110, resumeY + 15))
+
+        exitFont = font.render("Menu", True, color["white"]) 
+        exitGameW, exitGameH = 400, 100
+        exitX, exitY = scrWidth // 2 - exitGameW // 2, scrHeight // 2 - exitGameH + 150
+        exitGame = pygame.Rect(exitX, exitY, exitGameW, exitGameH)
+        pygame.draw.rect(win, color["red"], exitGame)
+        win.blit(exitFont, (exitX + 140, exitY + 15))
+
+        restartFont = font.render("Restart", True, color["white"]) 
+        restartW, restartH = 400, 100
+        retartX, restartY = scrWidth // 2 - restartW // 2, scrHeight // 2 - restartH + 50
+        restart = pygame.Rect(retartX, restartY, restartW, restartH)
+        pygame.draw.rect(win, color["black"], restart)
+        win.blit(restartFont, (retartX + 120, restartY + 15))
+
+        pygame.display.update()
+
+def playGame():
+    running = True
+    global bullets, distance, santaPos
+    while running:
+        clock.tick(30)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    pauseMenu()
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    mousePosition = pygame.mouse.get_pos()
+                    if len(bullets) < 10:
+                        bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 20, 20, color["red"], mousePosition, heart))
+
+        newBullets = []
+        for index in range(len(bullets)):
+            bullet = bullets[index]
+            if bullet.x  < scrWidth and bullet.x > 0 and bullet.y < scrHeight and bullet.y > 0:
+                bullet.x += int(bullet.changeInX * bullet.speed)
+                bullet.y -= int(bullet.changeInY * bullet.speed)
+                newBullets.append(bullet)  
+
+        bullets = newBullets.copy()      
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] and distance > 0:
+            # playerMain.x >= playerMain.velocity - 90
+            # playerMain.x -= playerMain.velocity
+            distance -= moveSpeed
+            playerMain.left, playerMain.right, playerMain.idle = True, False, False
+            playerMain.walkCount += 1
+            santaPos -= 1
+            for ghost in ghosts:
+                ghost.x += santaSpeedRelativeToGhost
+            
+        elif keys[pygame.K_RIGHT] and distance < (gameLength - 18) * 64:
+            # playerMain.x <= scrWidth - playerMain.width - playerMain.velocity
+            # playerMain.x += playerMain.velocity
+            distance += moveSpeed
+            playerMain.left, playerMain.right, playerMain.idle = False, True, False
+            playerMain.walkCount += 1
+            santaPos += 1 
+            for ghost in ghosts:
+                ghost.x -= santaSpeedRelativeToGhost
+                for bullet in ghost.bullets:
+                    bullet.x -= santaSpeedRelativeToGhost
         else:
-            playerMain.isJump = False
-            playerMain.jumpCount = playerMain.initJumpCount
-        
-    redrawGameWindow()
+            playerMain.walkCount = 0
+            playerMain.idle = True
 
+        if not playerMain.isJump:
+            if keys[pygame.K_UP]:
+                playerMain.isJump = True
+        if playerMain.isJump:
+            if playerMain.jumpCount >= -playerMain.initJumpCount:
+                playerMain.jumpAmount = (playerMain.jumpCount ** 2) * playerMain.jumpConst
+                if playerMain.jumpCount < 0:
+                    playerMain.y += playerMain.jumpAmount
+                else:
+                    playerMain.y -= playerMain.jumpAmount
+                playerMain.jumpCount -= 1
+            else:
+                playerMain.isJump = False
+                playerMain.jumpCount = playerMain.initJumpCount
+        
+        if playerMain.health <= 0:
+            endGame()
+            pygame.quit()
+            
+        redrawGameWindow()
+
+def menu():
+    running = True
+    while running:
+        win.fill((255, 255, 255))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    if play.collidepoint(pygame.mouse.get_pos()):
+                        playGame()
+                        running = False
+                        pygame.quit()
+                    elif exitGame.collidepoint(pygame.mouse.get_pos()):
+                        pygame.quit()
+        
+        playFont = font.render("Play", True, color["white"])
+        playW, playH = 400, 100
+        playX, playY = scrWidth // 2 - playW // 2, scrHeight // 2 - playH // 2 - 50
+        play = pygame.Rect(playX, playY, playW, playH)
+        pygame.draw.rect(win, color["blue"], play)
+        win.blit(playFont, (playX + 150, playY + 15))
+
+        exitFont = font.render("Exit", True, color["white"]) 
+        exitGameW, exitGameH = 400, 100
+        exitX, exitY = scrWidth // 2 - exitGameW // 2, scrHeight // 2 - exitGameH + 100
+        exitGame = pygame.Rect(exitX, exitY, exitGameW, exitGameH)
+        pygame.draw.rect(win, color["red"], exitGame)
+        win.blit(exitFont, (exitX + 150, exitY + 15))
+
+        
+        pygame.display.update()
+
+menu()
 pygame.quit()
