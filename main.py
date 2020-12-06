@@ -80,6 +80,7 @@ class Player (object):
         self.health = 100
 
     def draw(self, win):
+        print(self.health)
         self.x = int(self.x)
         self.y = int(self.y)
         if not self.isJump:
@@ -95,13 +96,19 @@ class Player (object):
         elif self.left: win.blit(walkLeft[self.walkCount // 3], (self.x, self.y))
         elif self.right: win.blit(walkRight[self.walkCount // 3], (self.x, self.y))
         else: assert 1
+        pygame.draw.rect(win, color["red"], (self.x, self.y, self.width, self.height), 1)
+
 
 class projectile(object):
-    def __init__(self, x, y, radius, color, mousePosition):
+    def __init__(self, x, y, radius, color, mousePosition, image):
         self.x = round(x)
         self.y = round(y)
-        self.changeInX = mousePosition[0] -  x
-        self.changeInY = -mousePosition[1] + y
+        if type(mousePosition) == tuple:
+            self.changeInX = mousePosition[0] -  x
+            self.changeInY = -mousePosition[1] + y
+        else:
+            self.changeInX = mousePosition.x -  x
+            self.changeInY = -mousePosition.y + y
         self.radius = radius
         self.color = color
         magnitude = math.sqrt(self.changeInX ** 2 + self.changeInY ** 2)
@@ -109,9 +116,11 @@ class projectile(object):
             self.changeInX /= magnitude
             self.changeInY /= magnitude
         self.speed = 8
+        self.image = image
         
     def draw(self, win):
-        pygame.draw.circle(win, self.color, (self.x, self.y), self.radius)
+        win.blit(self.image, ((self.x, self.y)))
+        # pygame.draw.circle(win, self.color, (self.x, self.y), self.radius)
 
 
 class enemy(object):
@@ -137,11 +146,24 @@ class enemy(object):
         self.santaMovment = 0
         self.count = 0
         self.health = 100
+        self.target = None
+        self.bullets = []
+        self.bulletsMove = []
+        self.times = 1
+        self.bulletSpeed = 20
 
     def draw(self, win):
+        if self.times % 150 == 0:
+            bullet = projectile((2*self.x + self.width)//2,  (2*self.y + self.height)//2, 6, color["black"], self.target, heart)
+            self.bullets.append(bullet)
+            changeX = (self.target.x - bullet.x) 
+            changeY = (self.target.y - bullet.y)
+            changeX /= 60
+            changeY /= 60
+            self.bulletsMove.append([round(changeX), round(changeY)])
+
         self.move()
         # self.y = 300
-        # print(santaPos, (self.x // 64), groundLevel[santaPos -  (self.x // 64) ])
         # self.y = scrHeight - groundLevel[self.x // 64 + 1] * 64 - 50
         if self.walkCount + 1 >= 4*3:
             self.walkCount = 0
@@ -151,6 +173,7 @@ class enemy(object):
             win.blit(self.enemyLeft[self.walkCount // 3], (self.x, self.y))
 
         pygame.draw.rect(win, color["red"], (self.x, self.y, self.width, self.height), 1)
+        self.times += 1
     
     def move(self):
         # self.x += 1
@@ -180,7 +203,19 @@ class enemy(object):
     def hit(self):
         self.count += 1
         self.health -= 50
-        print("HIT", self.count)
+
+    def drawBullet(self):
+        # bullet1 = projectile((2*self.x + self.width)//2,  (2*self.y + self.height)//2, 6, color["black"], target.x, target.y)
+        for bullet in self.bullets:
+            # print("Bullet", bullet.x, bullet.y, self.target.x, self.target.y, slope)
+            bullet.x += self.bulletsMove[self.bullets.index(bullet)][0]
+            bullet.y += self.bulletsMove[self.bullets.index(bullet)][1]
+            if bulletCollid(bullet.x, bullet.y, [self.target]):
+                self.bullets.pop(self.bullets.index(bullet))
+                self.target.health -= 10
+            else:
+                bullet.draw(win)
+        pass
             
 playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
 ghosts = []
@@ -274,7 +309,9 @@ def redrawGameWindow():
     drawHealth(win, (700, 30), playerMain.health)
     # ghost1.end = playerMain.x
     for ghost in ghosts:
+        ghost.target = playerMain
         ghost.draw(win)
+        ghost.drawBullet()
     for bullet in bullets:
         hitGhost = bulletCollid(bullet.x, bullet.y, ghosts)
         if hitGhost:
@@ -294,7 +331,7 @@ while running:
         if event.type == pygame.MOUSEBUTTONUP:
             mousePosition = pygame.mouse.get_pos()
             if len(bullets) < 10:
-                bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 6, color["red"], mousePosition))
+                bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 6, color["red"], mousePosition, heart))
 
     newBullets = []
     for index in range(len(bullets)):
