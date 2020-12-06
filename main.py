@@ -14,6 +14,7 @@ distance = 0
 moveSpeed = 10
 font = pygame.font.SysFont("Courier New", 48, bold=1)
 
+
 # Create the Screen
 win = pygame.display.set_mode((scrWidth, scrHeight))
 
@@ -381,6 +382,7 @@ def redrawGameWindow():
     scoreImage = font.render(str(score), True, color["white"])
     win.blit(scoreImage, (40, 20))
 
+
     pygame.display.update()
 
 while running:
@@ -450,7 +452,8 @@ while running:
         win.blit(lost, (scrWidth // 2 - 100, scrHeight // 2 - 30))
         win.blit(scoreText, (scrWidth // 2 - 100, 50 + scrHeight // 2))
         pygame.display.update()
-        time.sleep(10)
+        time.sleep(2)
+
         pygame.quit()
         
     redrawGameWindow()
