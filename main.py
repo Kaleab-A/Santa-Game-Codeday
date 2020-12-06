@@ -106,7 +106,7 @@ class Player (object):
 
 
 class projectile(object):
-    def __init__(self, x, y, radius, color, mousePosition, image):
+    def __init__(self, x, y, width, height, color, mousePosition, image):
         self.x = round(x)
         self.y = round(y)
         if type(mousePosition) == tuple:
@@ -115,7 +115,8 @@ class projectile(object):
         else:
             self.changeInX = mousePosition.x -  x
             self.changeInY = -mousePosition.y + y
-        self.radius = radius
+        self.width = width
+        self.height = height
         self.color = color
         magnitude = math.sqrt(self.changeInX ** 2 + self.changeInY ** 2)
         if magnitude > 0:
@@ -124,8 +125,9 @@ class projectile(object):
         self.speed = 8
         self.image = image
         
-    def draw(self, win, angle):
+    def draw(self, win, angle):        
         win.blit(pygame.transform.rotate(self.image, angle), ((self.x, self.y)))
+        pygame.draw.rect(win, color["red"], (self.x, self.y, self.width, self.height), 1)
         # pygame.draw.circle(win, self.color, (self.x, self.y), self.radius)
 
 
@@ -161,14 +163,15 @@ class enemy(object):
         self.walkSpeed = 1
         self.facing = 1
 
+
     def draw(self, win):
         if self.times % 100 == 0:
-            bullet = projectile((2*self.x + self.width)//2,  (2*self.y + self.height)//2, 6, color["black"], self.target, bulletImage)
+            bullet = projectile((2*self.x + self.width)//2,  (2*self.y + self.height)//2, 30, 9, color["black"], self.target, bulletImage)
             self.bullets.append(bullet)
             changeX = (self.target.x - bullet.x) 
             changeY = (self.target.y - bullet.y)
-            changeX /= 60
-            changeY /= 60
+            changeX /= self.bulletSpeed
+            changeY /= self.bulletSpeed
             self.bulletsMove.append([changeX, changeY])
         
         self.move()
@@ -199,9 +202,14 @@ class enemy(object):
 
 
     def drawBullet(self):
-        # bullet1 = projectile((2*self.x + self.width)//2,  (2*self.y + self.height)//2, 6, color["black"], target.x, target.y)
         for bullet in self.bullets:
-            # print("Bullet", bullet.x, bullet.y, self.target.x, self.target.y, slope)
+            # Bullet to Santa Collusion
+            bulletXPos = distance - (scrWidth // 2) + bullet.x
+            groundAtY = groundLevel[bulletXPos//64 + 8]
+            if bullet.y >= scrHeight - groundAtY * 64:
+                self.bullets.pop(self.bullets.index(bullet))
+                continue
+            
             currBulletDir = self.bulletsMove[self.bullets.index(bullet)]
             bullet.x += round(currBulletDir[0])
             bullet.y += round(currBulletDir[1])
@@ -212,19 +220,26 @@ class enemy(object):
                 angle =  180 - math.degrees( math.atan(currBulletDir[1]/currBulletDir[0]))
                 if bullet.x <= self.target.x:
                     angle += 180
-                # print(angle  , currBulletDir[1]/currBulletDir[0])
                 bullet.draw(win, angle)
-        pass
-            
+                
+            # Bullet to Love Collusion
+            for ghost in ghosts:
+                for bullet in ghost.bullets:
+                    for santaLove in bullets:
+                        if bulletCollid(bullet.x, bullet.y, [santaLove]):
+                            ghost.bullets.pop(ghost.bullets.index(bullet))
+                            bullets.pop(bullets.index(santaLove))
        
 def blitOffset(image, coordinates):
     win.blit(image, (coordinates[0] - distance, coordinates[1]))
 
 playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
+
 # ghosts = []
 # ghostCount = 10
 # for i in range(ghostCount):
 #     ghosts.append(enemy(random.randint(0, scrWidth), random.randint(0, scrHeight), 37, 45))
+
 running = True
 count = [0]
 additionalObjectsList = []
@@ -340,6 +355,11 @@ def redrawGameWindow():
         ghost.drawBullet()
 
     for bullet in bullets:
+        bulletXPos = distance - (scrWidth // 2) + bullet.x
+        groundAtY = groundLevel[bulletXPos//64 + 8]
+        if bullet.y >= scrHeight - groundAtY * 64:
+            bullets.pop(bullets.index(bullet))
+            continue
         hitGhost = bulletCollid(bullet.x, bullet.y, ghosts)
         if hitGhost:
             bullets.pop(bullets.index(bullet))
@@ -349,18 +369,17 @@ def redrawGameWindow():
     count[0] += 1
     pygame.display.update()
 
-    #
-
 bullets = []
+
 while running:
-    clock.tick(40)
+    clock.tick(30)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.MOUSEBUTTONUP:
             mousePosition = pygame.mouse.get_pos()
             if len(bullets) < 10:
-                bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 6, color["red"], mousePosition, heart))
+                bullets.append(projectile((2*playerMain.x + playerMain.width)//2,  (2*playerMain.y + playerMain.height)//2, 20, 20, color["red"], mousePosition, heart))
 
     newBullets = []
     for index in range(len(bullets)):
