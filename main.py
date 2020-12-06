@@ -191,7 +191,7 @@ class enemy(object):
     
     def move(self):
         currYLevels = [getYatX(self.x, self.width, 0), getYatX(self.x, self.width, 1)]
-        if self.y >= scrHeight - currYLevels[0] * 64 and self.y >= scrHeight - currYLevels[1] * 64:
+        if self.y >= scrHeight - currYLevels[0] * 64 or self.y >= scrHeight - currYLevels[1] * 64 or self.x >= scrWidth or self.x <= 0 :
             self.velocity = -self.velocity
         self.x += self.velocity
         self.walkCount += 1
