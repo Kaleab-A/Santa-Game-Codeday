@@ -93,15 +93,15 @@ class Player (object):
 
         if self.walkCount + 1 > 13*3: self.walkCount = 0
         if self.idle:
-            if self.left: win.blit(charL, (self.x, self.y))
+            if self.left: win.blit(charL, (self.x - 40, self.y))
             else: win.blit(charR, (self.x, self.y))
         elif self.isJump:
-            if self.left: win.blit(charL, (self.x, self.y))
+            if self.left: win.blit(charL, (self.x - 40, self.y))
             else: win.blit(charR, (self.x, self.y))
-        elif self.left: win.blit(walkLeft[self.walkCount // 3], (self.x, self.y))
+        elif self.left: win.blit(walkLeft[self.walkCount // 3], (self.x - 40, self.y))
         elif self.right: win.blit(walkRight[self.walkCount // 3], (self.x, self.y))
         else: assert 1
-        pygame.draw.rect(win, color["red"], (self.x, self.y, self.width, self.height), 1)
+        pygame.draw.rect(win, color["red"], (self.x + 40, self.y + 10, self.height, self.width), 1)
 
 
 class projectile(object):
@@ -299,15 +299,21 @@ def drawGround():
 def drawHealth(win, pos, healthValue):
     # TODO Conditional Render by usiing healthValue
     posX = pos[0]
-    for i in range(10):
+    for i in range(healthValue // 10):
         win.blit(heart, (posX, pos[1]))
         posX += 25
 
 def bulletCollid(bulletX, bulletY, ghosts):
     for ghost in ghosts:
-        if bulletX > ghost.x and bulletX < ghost.x + ghost.width:
-            if bulletY > ghost.y and bulletY < ghost.y + ghost.height:
-                return ghost
+        if type(ghosts) == Player:
+            if bulletX > ghost.x + 40 and bulletX < ghost.x + 40 + ghost.width:
+                if bulletY > ghost.y and bulletY < ghost.y + ghost.height:
+                    return ghost
+        else:
+            if bulletX > ghost.x and bulletX < ghost.x + ghost.width:
+                if bulletY > ghost.y and bulletY < ghost.y + ghost.height:
+                    return ghost
+
     return False
  
 def redrawGameWindow():
@@ -366,7 +372,7 @@ while running:
         # for ghost in ghosts:
         #     ghost.x += 64
         
-    elif keys[pygame.K_RIGHT] and distance < (gameLength - 18gi) * 64:
+    elif keys[pygame.K_RIGHT] and distance < (gameLength - 18) * 64:
         # playerMain.x <= scrWidth - playerMain.width - playerMain.velocity
         # playerMain.x += playerMain.velocity
         distance += moveSpeed
