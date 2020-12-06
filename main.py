@@ -327,7 +327,7 @@ while running:
         # for ghost in ghosts:
         #     ghost.x += 64
         
-    elif keys[pygame.K_RIGHT] and distance < (gameLength - 18) * 64:
+    elif keys[pygame.K_RIGHT] and distance < (gameLength - 18gi) * 64:
         # playerMain.x <= scrWidth - playerMain.width - playerMain.velocity
         # playerMain.x += playerMain.velocity
         distance += moveSpeed
