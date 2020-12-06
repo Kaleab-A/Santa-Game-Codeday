@@ -12,7 +12,8 @@ scrWidth = 1024
 scrHeight = 512
 distance = 0
 moveSpeed = 10
-font = pygame.font.SysFont("arial", 48)
+font = pygame.font.SysFont("Courier New", 48, bold=1)
+
 
 # Create the Screen
 win = pygame.display.set_mode((scrWidth, scrHeight))
@@ -191,7 +192,7 @@ class enemy(object):
     
     def move(self):
         currYLevels = [getYatX(self.x, self.width, 0), getYatX(self.x, self.width, 1)]
-        if self.y >= scrHeight - currYLevels[0] * 64 and self.y >= scrHeight - currYLevels[1] * 64:
+        if self.y >= scrHeight - currYLevels[0] * 64 or self.y >= scrHeight - currYLevels[1] * 64 or self.x >= scrWidth or self.x <= 0 :
             self.velocity = -self.velocity
         self.x += self.velocity
         self.walkCount += 1
@@ -241,7 +242,7 @@ def getYatX(x, width, which):
 def blitOffset(image, coordinates):
     win.blit(image, (coordinates[0] - distance, coordinates[1]))
 
-shouldCreateGhost = 100
+shouldCreateGhost = 90
 renderTimes = 0
 playerMain = Player(scrWidth//2, scrHeight-190, 93, 64)
 ghosts = []
@@ -379,7 +380,8 @@ def redrawGameWindow():
     count[0] += 1
     shouldCreateGhost -= int(4/shouldCreateGhost)
     scoreImage = font.render(str(score), True, color["white"])
-    win.blit(scoreImage, (10, 10))
+    win.blit(scoreImage, (40, 20))
+
 
     pygame.display.update()
 
@@ -444,11 +446,14 @@ while running:
             playerMain.jumpCount = playerMain.initJumpCount
     
     if playerMain.health <= 0:
-        win.fill((255, 255, 255))
-        lost = font.render("You lost!", True, color["black"])
-        win.blit(lost, (scrWidth // 2 - 100, scrHeight // 2))
+        win.fill((1,113,209))
+        lost = font.render("YOU LOST!", True, (210,80,77))
+        scoreText = font.render("SCORE: " + str(score), True, (210,80,77))
+        win.blit(lost, (scrWidth // 2 - 100, scrHeight // 2 - 30))
+        win.blit(scoreText, (scrWidth // 2 - 100, 50 + scrHeight // 2))
         pygame.display.update()
-        time.sleep(1)
+        time.sleep(2)
+
         pygame.quit()
         
     redrawGameWindow()
